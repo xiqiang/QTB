@@ -1,6 +1,9 @@
 #ifndef TreeBush_Area
 #define TreeBush_Area
 
+#include <list>
+#include <vector>
+
 namespace treebush
 {
 	struct Area
@@ -28,7 +31,7 @@ namespace treebush
 		float width() const { return right - left; }
 		float height() const { return top - bottom; }
 
-		bool isOverlap(const Area& r) const {
+		bool overlap(const Area& r) const {
 			return left <= r.right && right >= r.left 
 				&& bottom <= r.top && top >= r.bottom;
 		}
@@ -38,7 +41,7 @@ namespace treebush
 				&& bottom <= r.bottom && top >= r.top;
 		}
 
-		bool contains(float x, float y) const {
+		bool cross(float x, float y) const {
 			return x >= left && x <= right 
 				&& y >= bottom && y <= top;
 		}
@@ -48,6 +51,10 @@ namespace treebush
 		float bottom;
 		float top;
 	};
+
+	typedef std::list<Area>		AreaList;
+	typedef std::vector<Area>	AreaVector;
+
 }
 
 #endif

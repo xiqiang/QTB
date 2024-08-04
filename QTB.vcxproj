@@ -147,10 +147,14 @@
     <ClInclude Include="TreeBunch\Bush.h" />
     <ClInclude Include="TreeBunch\Bunch.h" />
     <ClInclude Include="TreeBunch\Land.h" />
+    <ClInclude Include="TreeBunch\QTree.h" />
     <ClInclude Include="TreeBunch\Zone.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp" />
+    <ClCompile Include="TreeBunch\Bunch.cpp" />
+    <ClCompile Include="TreeBunch\Bush.cpp" />
+    <ClCompile Include="TreeBunch\Zone.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="QTB.rc" />

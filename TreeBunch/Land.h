@@ -1,8 +1,8 @@
-#ifndef TreeLand_Land
-#define TreeLand_Land
+#ifndef TreeBush_Land
+#define TreeBush_Land
 
-#include <list>
 #include "Zone.h"
+#include "Bush.h"
 
 namespace treebush 
 {
@@ -25,9 +25,21 @@ namespace treebush
 			return m_nextBunchID++;
 		}
 
+		void resetStaticBush(const AreaVector& areaList) {
+			BushPMap bushMap;
+
+			for (AreaList::const_iterator it = areaList.begin(); it != areaList.end(); ++it)
+			{
+
+			}
+		}
+
 	private:
-		unsigned int m_nextBushID;
-		unsigned int m_nextBunchID;
+		unsigned int	m_nextBushID;
+		unsigned int	m_nextBunchID;
+
+	private:
+		BushPList		m_staticBushList;
 	};
 }
 

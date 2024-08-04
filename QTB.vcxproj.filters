@@ -45,10 +45,22 @@
     <ClInclude Include="TreeBunch\Land.h">
       <Filter>TreeBunch</Filter>
     </ClInclude>
+    <ClInclude Include="TreeBunch\QTree.h">
+      <Filter>TreeBunch</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeBunch\Bush.cpp">
+      <Filter>TreeBunch</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeBunch\Bunch.cpp">
+      <Filter>TreeBunch</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeBunch\Zone.cpp">
+      <Filter>TreeBunch</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
