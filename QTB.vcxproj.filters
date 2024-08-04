@@ -62,6 +62,9 @@
     <ClCompile Include="TreeBunch\Zone.cpp">
       <Filter>TreeBunch</Filter>
     </ClCompile>
+    <ClCompile Include="TreeBunch\Land.cpp">
+      <Filter>TreeBunch</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="QTB.rc">

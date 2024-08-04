@@ -10,11 +10,7 @@ namespace treebush
 		: public Zone
 	{
 	public:
-		Land(const Area& area, float minZoneSize)
-			: Zone(area, minZoneSize, NULL)
-			, m_nextBushID(0)
-			, m_nextBunchID(0)
-		{}
+		Land(const Area& area, float minZoneSize);
 
 	public:
 		unsigned int AllocBushID() {
@@ -25,14 +21,7 @@ namespace treebush
 			return m_nextBunchID++;
 		}
 
-		void resetStaticBush(const AreaVector& areaList) {
-			BushPMap bushMap;
-
-			for (AreaList::const_iterator it = areaList.begin(); it != areaList.end(); ++it)
-			{
-
-			}
-		}
+		void resetStaticBush(const AreaList& areaList);
 
 	private:
 		unsigned int	m_nextBushID;

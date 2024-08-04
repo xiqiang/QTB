@@ -154,6 +154,7 @@
     <ClCompile Include="QTB.cpp" />
     <ClCompile Include="TreeBunch\Bunch.cpp" />
     <ClCompile Include="TreeBunch\Bush.cpp" />
+    <ClCompile Include="TreeBunch\Land.cpp" />
     <ClCompile Include="TreeBunch\Zone.cpp" />
   </ItemGroup>
   <ItemGroup>
