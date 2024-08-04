@@ -30,10 +30,19 @@
     <ClInclude Include="QTB.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Bunch.h">
+    <ClInclude Include="TreeBunch\Bush.h">
       <Filter>TreeBunch</Filter>
     </ClInclude>
     <ClInclude Include="TreeBunch\Area.h">
+      <Filter>TreeBunch</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeBunch\Bunch.h">
+      <Filter>TreeBunch</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeBunch\Zone.h">
+      <Filter>TreeBunch</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeBunch\Land.h">
       <Filter>TreeBunch</Filter>
     </ClInclude>
   </ItemGroup>

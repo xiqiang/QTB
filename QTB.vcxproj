@@ -144,7 +144,10 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TreeBunch\Area.h" />
+    <ClInclude Include="TreeBunch\Bush.h" />
     <ClInclude Include="TreeBunch\Bunch.h" />
+    <ClInclude Include="TreeBunch\Land.h" />
+    <ClInclude Include="TreeBunch\Zone.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp" />
