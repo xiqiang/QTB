@@ -7,12 +7,10 @@
 namespace treebush 
 {
 	class Zone
-		: public QTree
+		: public QTree<Zone>
 	{
 	public:
-		Zone(const Area& area, Zone* parent = NULL);
-
-		virtual QTree*	newChild(const Area& area);
+		Zone(const Area& area, float minZoneSize, Zone* parent = NULL);
 
 	public:
 		void		addBunch(Bunch* bunch);

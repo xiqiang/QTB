@@ -19,7 +19,7 @@ namespace treebush
 		const Area&		overall() const { return m_overall; }
 
 		void			addArea(const Area& area);
-		void			splice(Bush& r);
+		void			merge(const Bush& r);
 		bool			overlap(const Bush& r) const;
 		bool			overlap(const Area& area) const;
 		bool			cross(float x, float y) const;

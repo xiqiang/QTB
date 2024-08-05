@@ -21,16 +21,6 @@ namespace treebush
 		m_areaList.push_back(area);
 	}
 
-	void Bush::splice(Bush& r)
-	{
-		const Area& area = r.overall();
-		m_overall.left = m_overall.left < area.left ? m_overall.left : area.left;
-		m_overall.right = m_overall.right > area.right ? m_overall.right : area.right;
-		m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
-		m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
-		m_areaList.splice(m_areaList.end(), r.m_areaList);
-	}
-
 	bool Bush::overlap(const Bush& r) const
 	{
 		if (!m_overall.overlap(r.m_overall))
@@ -78,6 +68,5 @@ namespace treebush
 		}
 		return false;
 	}
-
 }
 
