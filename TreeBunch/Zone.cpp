@@ -3,11 +3,16 @@
 
 namespace treebush
 {
-	Zone::Zone(const Area& area, float minZoneSize, Zone* parent = NULL)
-		: QTree(area, minZoneSize, parent)
+	Zone::Zone(const Area& area,  Zone* parent /*= NULL*/)
+		: QTree(area, parent)
 	{
 	}
 
+	QTree* Zone::newChild(const Area& area)
+	{
+		return new Zone(area, this);
+	}
+	
 	void Zone::addBunch(Bunch* bunch)
 	{
 		assert(bunch);
@@ -18,7 +23,7 @@ namespace treebush
 		m_bunchMap[bunch->id()] = bunch;
 	}
 
-	bool Zone::bushCross(float x, float y, unsigned int* bushID = NULL) const
+	bool Zone::bushCross(float x, float y, unsigned int* bushID /*= NULL*/) const
 	{
 		if (!m_area.cross(x, y))
 			return false;

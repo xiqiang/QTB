@@ -2,8 +2,8 @@
 
 namespace treebush
 {
-	Land::Land(const Area& area, float minZoneSize)
-		: Zone(area, minZoneSize, NULL)
+	Land::Land(const Area& area)
+		: Zone(area, NULL)
 		, m_nextBushID(0)
 		, m_nextBunchID(0)
 	{
@@ -11,10 +11,15 @@ namespace treebush
 
 	void Land::resetStaticBush(const AreaList& areaList)
 	{
+		generateBushMap(areaList, m_staticBush);
+	}
+
+	void Land::generateBushMap(const AreaList& areaList, BushPMap& bushMap)
+	{
+		bushMap.clear();
+
 		if (areaList.empty())
 			return;
-
-		BushPMap bushMap;
 
 		for (AreaList::const_iterator itArea = areaList.begin(); itArea != areaList.end(); ++itArea)
 		{
@@ -35,8 +40,11 @@ namespace treebush
 			{
 				Bush* bush = bushMap[overlaps[0]];
 				bush->addArea(*itArea);
-				for(size_t o = 1; o < overlaps.size(); ++o)
-
+				for (size_t i = 1; i < overlaps.size(); ++i)
+				{
+					bush->splice(*(bushMap[overlaps[i]]));
+					bushMap.erase(overlaps[i]);
+				}
 			}
 		}
 	}
