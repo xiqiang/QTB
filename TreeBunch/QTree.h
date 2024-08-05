@@ -6,29 +6,44 @@
 
 namespace treebush 
 {
-	template <class T>
 	class QTree
 	{
 	public:
-		static const int left_bottom	= 0;
-		static const int left_top		= 1;
-		static const int right_bottom	= 2;
-		static const int right_top		= 3;
+		static const int LB	= 0;
+		static const int LT	= 1;
+		static const int RB	= 2;
+		static const int RT	= 3;
+
+		static const int CHILD_COUNT = 4;
 
 	public:
-		QTree(const Area& area, float minQTreeSize, T* parent = NULL) {
+		QTree(const Area& area, QTree* parent = NULL) {
 			m_area = area;
 			m_parent = parent;
 			memset(m_childs, 0, sizeof(m_childs));
-			devide(minQTreeSize);
+		}
+
+		virtual ~QTree() {
+			for (int i = 0; i < CHILD_COUNT; ++i)
+			{
+				if (m_childs[i])
+					delete m_childs[i];
+			}
+		}
+
+		virtual QTree*	newChild(const Area& area) = 0;
+
+		QTree* getChild(unsigned int index) {
+			assert(index < CHILD_COUNT);
+			return m_childs[index];
 		}
 
 	public:
 		const Area& area() { return m_area; }
 
 		void devide(float minQTreeSize) {
-			float childWidth = m_area.width() * 0.5;
-			float childHeight = m_area.height() * 0.5;
+			float childWidth = m_area.width() * 0.5f;
+			float childHeight = m_area.height() * 0.5f;
 
 			if (childWidth <= minQTreeSize || childHeight <= minQTreeSize)
 				return;
@@ -37,22 +52,26 @@ namespace treebush
 			float cy = m_area.y();
 
 			Area areaLB(cx - childWidth, cx, cy - childHeight, cy);
-			m_childs[left_bottom] = new T(areaLB, minQTreeSize, this);
+			m_childs[LB] = newChild(areaLB);
+			m_childs[LB]->devide(minQTreeSize);
 
 			Area areaLT(cx - childWidth, cx, cy, cy + childHeight);
-			m_childs[left_top] = new T(areaLT, minQTreeSize, this);
+			m_childs[LT] = newChild(areaLT);
+			m_childs[LT]->devide(minQTreeSize);
 
 			Area areaRB(cx, cx + childWidth, cy - childHeight, cy);
-			m_childs[right_bottom] = new T(areaRB, minQTreeSize, this);
+			m_childs[RB] = newChild(areaRB);
+			m_childs[RB]->devide(minQTreeSize);
 
 			Area areaRT(cx, cx + childWidth, cy, cy + childHeight);
-			m_childs[right_top] = new T(areaRT, minQTreeSize, this);
+			m_childs[RT] = newChild(areaRT);
+			m_childs[RT]->devide(minQTreeSize);
 		}
 
 	protected:
 		Area	m_area;
-		T*		m_parent;
-		T*		m_childs[4];
+		QTree*	m_parent;
+		QTree*	m_childs[CHILD_COUNT];
 	};
 }
 

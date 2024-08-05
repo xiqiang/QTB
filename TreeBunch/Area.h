@@ -25,8 +25,8 @@ namespace treebush
 			assert(bottom <= top);
 		}
 
-		float x() const { return  (right - left) * 0.5f; }
-		float y() const { return  (top - bottom) * 0.5f; }
+		float x() const { return  (left + right) * 0.5f; }
+		float y() const { return  (bottom + top) * 0.5f; }
 
 		float width() const { return right - left; }
 		float height() const { return top - bottom; }

@@ -10,7 +10,7 @@ namespace treebush
 		: public Zone
 	{
 	public:
-		Land(const Area& area, float minZoneSize);
+		Land(const Area& area);
 
 	public:
 		unsigned int AllocBushID() {
@@ -22,13 +22,14 @@ namespace treebush
 		}
 
 		void resetStaticBush(const AreaList& areaList);
+		void generateBushMap(const AreaList& areaList, BushPMap& bushMap);
 
 	private:
 		unsigned int	m_nextBushID;
 		unsigned int	m_nextBunchID;
 
 	private:
-		BushPList		m_staticBushList;
+		BushPMap		m_staticBush;
 	};
 }
 
