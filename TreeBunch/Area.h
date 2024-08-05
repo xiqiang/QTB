@@ -4,7 +4,7 @@
 #include <list>
 #include <vector>
 
-namespace treebush
+namespace qtb
 {
 	struct Area
 	{

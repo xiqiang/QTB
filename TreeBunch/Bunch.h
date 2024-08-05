@@ -3,7 +3,7 @@
 
 #include "Bush.h"
 
-namespace treebush 
+namespace qtb 
 {
 	class Land;
 	class Zone;

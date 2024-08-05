@@ -4,7 +4,7 @@
 #include "QTree.h"
 #include "Bunch.h"
 
-namespace treebush 
+namespace qtb 
 {
 	class Zone
 		: public QTree

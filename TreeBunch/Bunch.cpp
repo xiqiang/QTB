@@ -2,7 +2,7 @@
 #include "Bunch.h"
 #include "Land.h"
 
-namespace treebush
+namespace qtb
 {
 	Bunch::Bunch(Land* land)
 	{

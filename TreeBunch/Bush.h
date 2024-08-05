@@ -4,7 +4,7 @@
 #include <map>
 #include "Area.h"
 
-namespace treebush 
+namespace qtb 
 {
 	class Land;
 

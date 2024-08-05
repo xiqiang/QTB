@@ -4,7 +4,7 @@
 #include <cassert>
 #include "Area.h"
 
-namespace treebush 
+namespace qtb 
 {
 	class QTree
 	{

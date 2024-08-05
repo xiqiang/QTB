@@ -1,7 +1,7 @@
 #include <cassert>
 #include "Zone.h"
 
-namespace treebush
+namespace qtb
 {
 	Zone::Zone(const Area& area,  Zone* parent /*= NULL*/)
 		: QTree(area, parent)

@@ -2,7 +2,7 @@
 #include "Bush.h"
 #include "Land.h"
 
-namespace treebush
+namespace qtb
 {
 	Bush::Bush(Land* land, bool _static)
 	{

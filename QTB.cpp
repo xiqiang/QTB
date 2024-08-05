@@ -1,6 +1,7 @@
 ﻿// QTB.cpp : 定义应用程序的入口点。
 //
 
+#include <time.h>
 #include <objidl.h>
 #include <gdiplus.h>
 #include <windowsx.h>
@@ -14,9 +15,12 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-#define LAND_WDITH      600
-#define LAND_HEIGHT     600
-#define MIN_ZONE_SIZE   20
+const int   LAND_WIDTH            = 600;
+const int   LAND_HEIGHT           = 600;
+const int   MIN_ZONE_SIZE         = 20;
+const int   RAND_AREA_COUNT       = 200;
+const float RAND_AREA_SIZE_MIN    = 2.0f;
+const float RAND_AREA_SIZE_MAX    = 20.0f;
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -26,21 +30,26 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
-treebush::Land*     land = NULL;
 
 Point               cursorDownPos;
 Point               cursorUpPos;
 Point               cursorPos;
+
+qtb::Land*          land = NULL;
+qtb::AreaList       randAreaList;
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 
+VOID                InitLand();
+
+VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
-VOID                DrawQTree(Graphics& graphics, treebush::QTree* tree);
+VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
+VOID                DrawRandAreas(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -155,9 +164,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWndMain, nCmdShow);
    UpdateWindow(hWndMain);
 
-   treebush::Area area(0, LAND_WDITH, 0, LAND_HEIGHT);
-   land = new treebush::Land(area);
-   land->devide(MIN_ZONE_SIZE);
+   InitLand();
 
    return TRUE;
 }
@@ -249,6 +256,35 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+int RangeRand(int min, int max)
+{
+    return rand() % (max - min) + min;
+}
+
+float RangeRand(float min, float max)
+{
+    return rand() / (float)RAND_MAX * (max - min) + min;
+}
+
+VOID InitLand()
+{
+    srand(time(NULL));
+
+    qtb::Area area(0, LAND_WIDTH, 0, LAND_HEIGHT);
+    land = new qtb::Land(area);
+    land->devide(MIN_ZONE_SIZE);
+
+    for (int i = 0; i < RAND_AREA_COUNT; ++i)
+    {
+        float x = RangeRand(0.0f, (float)LAND_WIDTH);
+        float y = RangeRand(0.0f, (float)LAND_HEIGHT);
+        float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+        float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+
+        randAreaList.push_back(qtb::Area(x-w, x+w, y-h,y+h));
+    }
+}
+
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 {
     if (!land)
@@ -285,7 +321,9 @@ VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 VOID DrawMain(Graphics& graphics)
 {
     DrawQTree(graphics, land);
+    DrawRandAreas(graphics);
 
+    // mouse
     Pen penMD(Color(255, 0, 255, 0));
     Rect rcMD(cursorDownPos.X - 3, cursorDownPos.Y - 3, 6, 6);
     graphics.DrawEllipse(&penMD, rcMD);
@@ -297,19 +335,29 @@ VOID DrawMain(Graphics& graphics)
     graphics.DrawEllipse(&penMU, rcMU);
 }
 
-VOID DrawQTree(Graphics& graphics, treebush::QTree* tree)
+VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 {
     assert(tree);
 
-    const treebush::Area& area = tree->area();
+    const qtb::Area& area = tree->area();
     RectF rc(area.left, area.bottom, area.width(), area.height());
-    Pen pen(Color(255, 0, 128, 128));
+    Pen pen(Color(32, 0, 128, 128));
     graphics.DrawRectangle(&pen, rc);
 
-    for (int i = 0; i < treebush::QTree::CHILD_COUNT; ++i)
+    for (int i = 0; i < qtb::QTree::CHILD_COUNT; ++i)
     {
-        treebush::QTree* child = tree->getChild(i);
+        qtb::QTree* child = tree->getChild(i);
         if (child)
             DrawQTree(graphics, child);
+    }
+}
+
+VOID DrawRandAreas(Graphics& graphics)
+{
+    Pen pen(Color(128, 0, 255, 0));
+    for (qtb::AreaList::const_iterator it = randAreaList.begin(); it != randAreaList.end(); ++it)
+    {
+        RectF rc(it->left, it->bottom, it->width(), it->height());
+        graphics.DrawRectangle(&pen, rc);
     }
 }

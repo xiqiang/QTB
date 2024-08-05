@@ -1,6 +1,6 @@
 #include "Land.h"
 
-namespace treebush
+namespace qtb
 {
 	Land::Land(const Area& area)
 		: Zone(area, NULL)
