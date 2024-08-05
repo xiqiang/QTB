@@ -7,6 +7,8 @@
 #include "QTB.h"
 #include "TreeBunch/Land.h"
 
+#pragma comment (lib,"Gdiplus.lib")
+
 using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
