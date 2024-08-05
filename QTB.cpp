@@ -3,6 +3,7 @@
 
 #include <objidl.h>
 #include <gdiplus.h>
+#include <windowsx.h>
 #include "framework.h"
 #include "QTB.h"
 #include "TreeBunch/Land.h"
@@ -26,6 +27,10 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
 treebush::Land*     land = NULL;
+
+Point               cursorDownPos;
+Point               cursorUpPos;
+Point               cursorPos;
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -200,6 +205,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+    case WM_LBUTTONDOWN:
+        {
+            cursorDownPos.X = GET_X_LPARAM(lParam);
+            cursorDownPos.Y = GET_Y_LPARAM(lParam);
+        }
+        break;
+    case WM_LBUTTONUP:
+        {
+            cursorUpPos.X = GET_X_LPARAM(lParam);
+            cursorUpPos.Y = GET_Y_LPARAM(lParam);
+        }
+        break;
+    case WM_MOUSEMOVE:
+        {
+            cursorPos.X = GET_X_LPARAM(lParam);
+            cursorPos.Y = GET_Y_LPARAM(lParam);
+        }
+        break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -262,6 +285,16 @@ VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 VOID DrawMain(Graphics& graphics)
 {
     DrawQTree(graphics, land);
+
+    Pen penMD(Color(255, 0, 255, 0));
+    Rect rcMD(cursorDownPos.X - 3, cursorDownPos.Y - 3, 6, 6);
+    graphics.DrawEllipse(&penMD, rcMD);
+    Rect rcMM(cursorPos.X - 3, cursorPos.Y - 3, 6, 6);
+    graphics.DrawEllipse(&penMD, rcMM);
+
+    Pen penMU(Color(255, 0, 255, 255));
+    Rect rcMU(cursorUpPos.X - 3, cursorUpPos.Y - 3, 6, 6);
+    graphics.DrawEllipse(&penMU, rcMU);
 }
 
 VOID DrawQTree(Graphics& graphics, treebush::QTree* tree)
