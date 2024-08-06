@@ -14,23 +14,14 @@ namespace qtb
 
 	Land::~Land()
 	{
-		clearStaticBush();
+		clearBushMap(m_staticBushMap);
+		clearBushGroup();
 	}
 
 	void Land::resetStaticBush(const AreaMap& areaMap)
 	{
-		clearStaticBush();
+		clearBushMap(m_staticBushMap);
 		generateBushMap(areaMap, m_staticBushMap);
-	}
-
-	void Land::clearStaticBush()
-	{
-		for (BushPMap::iterator it = m_staticBushMap.begin(); it != m_staticBushMap.end(); ++it)
-		{
-			assert(it->second);
-			delete it->second;
-		}
-		m_staticBushMap.clear();
 	}
 
 	unsigned int Land::addDynamicArea(const Area& area)
@@ -43,6 +34,11 @@ namespace qtb
 	void Land::removeDynamicArea(unsigned int id)
 	{
 		m_dynamicAreaMap.erase(id);
+	}
+
+	void Land::setDynamicAreas(const AreaMap& areas)
+	{
+		m_dynamicAreaMap = areas;
 	}
 
 	void Land::generateBushMap(const AreaMap& areaMap, BushPMap& bushMap)
@@ -77,6 +73,16 @@ namespace qtb
 				}
 			}
 		}
+	}
+
+	void Land::clearBushMap(BushPMap& bushMap)
+	{
+		for (BushPMap::iterator it = bushMap.begin(); it != bushMap.end(); ++it)
+		{
+			assert(it->second);
+			delete it->second;
+		}
+		bushMap.clear();
 	}
 
 	void Land::rebuildBushGroup()
@@ -124,6 +130,9 @@ namespace qtb
 				}
 			}
 		}
+
+		// clear
+		clearBushMap(dynamicBushMap);
 	}
 
 	void Land::clearBushGroup()

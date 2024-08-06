@@ -20,12 +20,13 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-const int   LAND_WIDTH            = 600;
-const int   LAND_HEIGHT           = 600;
-const int   MIN_ZONE_SIZE         = 20;
-const int   RAND_AREA_COUNT       = 200;
-const float RAND_AREA_SIZE_MIN    = 3.0f;
-const float RAND_AREA_SIZE_MAX    = 30.0f;
+const int   LAND_WIDTH              = 600;
+const int   LAND_HEIGHT             = 600;
+const int   MIN_ZONE_SIZE           = 20;
+const int   STATIC_AREA_COUNT       = 200;
+const int   DYNAMIC_AREA_COUNT      = 100;
+const float RAND_AREA_SIZE_MIN      = 3.0f;
+const float RAND_AREA_SIZE_MAX      = 30.0f;
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -42,10 +43,13 @@ Point               cursorPos;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
-qtb::AreaMap        randAreaMap;
+qtb::AreaMap        staticAreaMap;
+qtb::AreaMap        dynamicAreaMap;
 
 BOOL                bViewStaticAreas = TRUE;
+BOOL                bViewDynamicAreas = TRUE;
 BOOL                bViewStaticBush = TRUE;
+BOOL                bViewBushGroup = TRUE;
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -57,12 +61,15 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 VOID                InitLand();
 VOID                TermLand();
 VOID                RandomStaticBush();
+VOID                RandomDynamicBush();
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
 VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
 VOID                DrawStaticAreas(Graphics& graphics);
+VOID                DrawDynamicAreas(Graphics& graphics);
 VOID                DrawStaticBush(Graphics& graphics);
+VOID                DrawBushGroup(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -211,6 +218,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_LAND_RANDOMSTATICBUSH:
                 RandomStaticBush();
                 break;
+            case ID_LAND_RANDOMDYNAMICAREAS:
+                RandomDynamicBush();
+                break;
+            case ID_LAND_REBUILD:
+                if(land)
+                    land->rebuildBushGroup();
+                break;
             case ID_VIEW_STATICAREAS:
                 {
                     bViewStaticAreas = !bViewStaticAreas;
@@ -218,13 +232,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CheckMenuItem(hmenuBar, ID_VIEW_STATICAREAS, MF_BYCOMMAND | check);
                 }
                 break;
+            case ID_VIEW_DYNAMICAREAS:
+                {
+                    bViewDynamicAreas = !bViewDynamicAreas;
+                    UINT check = bViewDynamicAreas ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICAREAS, MF_BYCOMMAND | check);
+                }
+                break;
             case ID_VIEW_STATICBUSH:
-            {
-                bViewStaticBush = !bViewStaticBush;
-                UINT check = bViewStaticBush ? MF_CHECKED : MF_UNCHECKED;
-                CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
-            }
-            break;
+                {
+                    bViewStaticBush = !bViewStaticBush;
+                    UINT check = bViewStaticBush ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_VIEW_BUSHGROUP:
+                {
+                    bViewBushGroup = !bViewBushGroup;
+                    UINT check = bViewBushGroup ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_BUSHGROUP, MF_BYCOMMAND | check);
+                }
+                break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -305,6 +333,8 @@ VOID InitLand()
     land->devide(MIN_ZONE_SIZE);
 
     RandomStaticBush();
+    RandomDynamicBush();
+    land->rebuildBushGroup();
 }
 
 VOID TermLand()
@@ -321,19 +351,39 @@ VOID RandomStaticBush()
     if (!land)
         return;
 
-    randAreaMap.clear();
+    staticAreaMap.clear();
 
-    for (int i = 0; i < RAND_AREA_COUNT; ++i)
+    for (int i = 0; i < STATIC_AREA_COUNT; ++i)
     {
         float x = RangeRand(0.0f, (float)LAND_WIDTH);
         float y = RangeRand(0.0f, (float)LAND_HEIGHT);
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        randAreaMap[land->AllocAreaID()]=(qtb::Area(x - w, x + w, y - h, y + h));
+        staticAreaMap[land->AllocAreaID()]=(qtb::Area(x - w, x + w, y - h, y + h));
     }
 
-    land->resetStaticBush(randAreaMap);
+    land->resetStaticBush(staticAreaMap);
+}
+
+VOID RandomDynamicBush()
+{
+    if (!land)
+        return;
+
+    dynamicAreaMap.clear();
+
+    for (int i = 0; i < DYNAMIC_AREA_COUNT; ++i)
+    {
+        float x = RangeRand(0.0f, (float)LAND_WIDTH);
+        float y = RangeRand(0.0f, (float)LAND_HEIGHT);
+        float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+        float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+
+        dynamicAreaMap[land->AllocAreaID()] = (qtb::Area(x - w, x + w, y - h, y + h));
+    }
+
+    land->setDynamicAreas(dynamicAreaMap);
 }
 
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
@@ -378,8 +428,12 @@ VOID DrawMain(Graphics& graphics)
 
     if(bViewStaticAreas)
         DrawStaticAreas(graphics);
+    if (bViewDynamicAreas)
+        DrawDynamicAreas(graphics);
     if (bViewStaticBush)
         DrawStaticBush(graphics);
+    if (bViewBushGroup)
+        DrawBushGroup(graphics);
 
     // mouse
     Pen penMD(Color(255, 0, 255, 0));
@@ -415,8 +469,18 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 
 VOID DrawStaticAreas(Graphics& graphics)
 {
-    SolidBrush brush(Color(64, 0, 255, 0));
-    for (qtb::AreaMap::const_iterator it = randAreaMap.begin(); it != randAreaMap.end(); ++it)
+    SolidBrush brush(Color(64, 128, 192, 0));
+    for (qtb::AreaMap::const_iterator it = staticAreaMap.begin(); it != staticAreaMap.end(); ++it)
+    {
+        RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
+        graphics.FillRectangle(&brush, rc);
+    }
+}
+
+VOID DrawDynamicAreas(Graphics& graphics)
+{
+    SolidBrush brush(Color(64, 0, 192, 128));
+    for (qtb::AreaMap::const_iterator it = dynamicAreaMap.begin(); it != dynamicAreaMap.end(); ++it)
     {
         RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
         graphics.FillRectangle(&brush, rc);
@@ -436,6 +500,23 @@ VOID DrawStaticBush(Graphics& graphics)
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
         Pen pen(drawData.GetBushRes(bush->id()).color);
+        graphics.DrawRectangle(&pen, rc);
+    }
+}
+
+VOID DrawBushGroup(Graphics& graphics)
+{
+    if (!land)
+        return;
+
+    const qtb::BushGroupPMap& bushGroupMap = land->getBushGroup();
+    for (qtb::BushGroupPMap::const_iterator it = bushGroupMap.begin(); it != bushGroupMap.end(); ++it)
+    {
+        const qtb::BushGroup* bushGroup = it->second;
+        const qtb::Area& area = bushGroup->overall();
+        RectF rc(area.left, area.bottom, area.width(), area.height());
+
+        Pen pen(drawData.GetBushGroupRes(bushGroup->id()).color);
         graphics.DrawRectangle(&pen, rc);
     }
 }
