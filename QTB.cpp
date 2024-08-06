@@ -42,7 +42,7 @@ Point               cursorPos;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
-qtb::AreaList       randAreaList;
+qtb::AreaMap        randAreaMap;
 
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = TRUE;
@@ -321,7 +321,7 @@ VOID RandomStaticBush()
     if (!land)
         return;
 
-    randAreaList.clear();
+    randAreaMap.clear();
 
     for (int i = 0; i < RAND_AREA_COUNT; ++i)
     {
@@ -330,10 +330,10 @@ VOID RandomStaticBush()
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        randAreaList.push_back(qtb::Area(x - w, x + w, y - h, y + h));
+        randAreaMap[land->AllocAreaID()]=(qtb::Area(x - w, x + w, y - h, y + h));
     }
 
-    land->resetStaticBush(randAreaList);
+    land->resetStaticBush(randAreaMap);
 }
 
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
@@ -416,9 +416,9 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 VOID DrawStaticAreas(Graphics& graphics)
 {
     SolidBrush brush(Color(64, 0, 255, 0));
-    for (qtb::AreaList::const_iterator it = randAreaList.begin(); it != randAreaList.end(); ++it)
+    for (qtb::AreaMap::const_iterator it = randAreaMap.begin(); it != randAreaMap.end(); ++it)
     {
-        RectF rc(it->left, it->bottom, it->width(), it->height());
+        RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
         graphics.FillRectangle(&brush, rc);
     }
 }
@@ -428,7 +428,7 @@ VOID DrawStaticBush(Graphics& graphics)
     if (!land)
         return;
 
-    const qtb::BushPMap& staticBush = land->GetStaticBush();
+    const qtb::BushPMap& staticBush = land->getStaticBush();
     for (qtb::BushPMap::const_iterator it = staticBush.begin(); it != staticBush.end(); ++it)
     {
         const qtb::Bush* bush = it->second;

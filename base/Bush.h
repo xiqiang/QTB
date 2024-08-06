@@ -11,11 +11,10 @@ namespace qtb
 	class Bush
 	{
 	public:
-		Bush(Land* land, bool _static);
+		Bush(Land* land);
 
 	public:
 		unsigned int	id() const { return m_id; }
-		bool			isStatic() const { return m_static; }
 		const Area&		overall() const { return m_overall; }
 
 		void			addArea(const Area& area);
@@ -27,7 +26,6 @@ namespace qtb
 	private:
 		Land*			m_land;
 		unsigned int	m_id;
-		bool			m_static;
 
 	private:
 		AreaList		m_areaList;

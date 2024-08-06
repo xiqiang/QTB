@@ -141,7 +141,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="base\Area.h" />
-    <ClInclude Include="base\Bunch.h" />
+    <ClInclude Include="base\BushGroup.h" />
     <ClInclude Include="base\Bush.h" />
     <ClInclude Include="base\Land.h" />
     <ClInclude Include="base\QTree.h" />
@@ -153,7 +153,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="base\Bunch.cpp" />
+    <ClCompile Include="base\BushGroup.cpp" />
     <ClCompile Include="base\Bush.cpp" />
     <ClCompile Include="base\Land.cpp" />
     <ClCompile Include="base\Zone.cpp" />

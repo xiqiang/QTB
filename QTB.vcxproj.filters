@@ -48,7 +48,7 @@
     <ClInclude Include="base\Area.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\Bunch.h">
+    <ClInclude Include="base\BushGroup.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="editor\DrawData.h">
@@ -65,7 +65,7 @@
     <ClCompile Include="base\Zone.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\Bunch.cpp">
+    <ClCompile Include="base\BushGroup.cpp">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\Bush.cpp">

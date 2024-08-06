@@ -18,23 +18,37 @@ namespace qtb
 			return m_nextBushID++;
 		}
 
-		unsigned int AllocBunchID() {
-			return m_nextBunchID++;
+		unsigned int AllocBushGroupID() {
+			return m_nextBushGroupID++;
 		}
 
-		void resetStaticBush(const AreaList& areaList);
-		void generateBushMap(const AreaList& areaList, BushPMap& bushMap);
+		unsigned int AllocAreaID() {
+			return m_nextAreaID++;
+		}
 
-		const BushPMap& GetStaticBush() const { return m_staticBush; }
+		void					resetStaticBush(const AreaMap& areaMap);
+		void					clearStaticBush();
+		const BushPMap&			getStaticBush() const { return m_staticBushMap; }
 
-		void clearStaticBush();
+		unsigned int			addDynamicArea(const Area& area);
+		void					removeDynamicArea(unsigned int id);
+
+		void					generateBushMap(const AreaMap& areaMap, BushPMap& bushMap);
+
+		void					rebuildBushGroup();
+		void					clearBushGroup();
+		const BushGroupPMap&	getBushGroup() const { return m_bushGroupMap; }
 
 	private:
 		unsigned int	m_nextBushID;
-		unsigned int	m_nextBunchID;
+		unsigned int	m_nextBushGroupID;
+		unsigned int	m_nextAreaID;
 
 	private:
-		BushPMap		m_staticBush;
+		BushPMap		m_staticBushMap;
+		AreaMap			m_dynamicAreaMap;
+		BushGroupPMap	m_bushGroupMap;
+
 	};
 }
 

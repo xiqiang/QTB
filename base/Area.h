@@ -2,7 +2,7 @@
 #define QTB_Area
 
 #include <list>
-#include <vector>
+#include <map>
 
 namespace qtb
 {
@@ -41,7 +41,7 @@ namespace qtb
 				&& bottom <= r.bottom && top >= r.top;
 		}
 
-		bool cross(float x, float y) const {
+		bool contains(float x, float y) const {
 			return x >= left && x <= right 
 				&& y >= bottom && y <= top;
 		}
@@ -52,8 +52,8 @@ namespace qtb
 		float top;
 	};
 
-	typedef std::list<Area>		AreaList;
-	typedef std::vector<Area>	AreaVector;
+	typedef std::list<Area>					AreaList;
+	typedef std::map<unsigned int, Area>	AreaMap;
 
 }
 

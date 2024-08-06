@@ -2,7 +2,7 @@
 #define QTB_Zone
 
 #include "QTree.h"
-#include "Bunch.h"
+#include "BushGroup.h"
 
 namespace qtb 
 {
@@ -15,11 +15,13 @@ namespace qtb
 		virtual QTree*	newChild(const Area& area);
 
 	public:
-		void		addBunch(Bunch* bunch);
-		bool		bushCross(float x, float y, unsigned int* bushID = NULL) const;
+		unsigned int	generation() const { return m_generation; }
+		void			addBushGroup(BushGroup* bunch);
+		bool			bushCross(float x, float y, unsigned int* bushID = NULL) const;
 
 	private:
-		BunchMap	m_bunchMap;
+		unsigned int	m_generation;
+		BushGroupPMap	m_bushGroupMap;
 	};
 }
 

@@ -1,5 +1,5 @@
-#ifndef QTB_Bunch
-#define QTB_Bunch
+#ifndef QTB_BushGroup
+#define QTB_BushGroup
 
 #include "Bush.h"
 
@@ -8,19 +8,21 @@ namespace qtb
 	class Land;
 	class Zone;
 
-	class Bunch
+	class BushGroup
 	{
 	public:
 		friend class Zone;
 
 	public:
-		Bunch(Land* land);
+		BushGroup(Land* land);
 
 	public:
 		unsigned int	id() const { return m_id; }
 		const Area&		overall() { return m_overall; }
 
 		void			addBush(Bush* bush);
+		bool			overlap(const Bush& r) const;
+		void			splice(BushGroup& r);
 		bool			bushCheck(float x, float y) const;
 
 	private:
@@ -33,7 +35,7 @@ namespace qtb
 		Area			m_overall;
 	};
 
-	typedef std::map<unsigned int, Bunch*> BunchMap;
+	typedef std::map<unsigned int, BushGroup*> BushGroupPMap;
 
 }
 

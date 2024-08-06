@@ -4,12 +4,11 @@
 
 namespace qtb
 {
-	Bush::Bush(Land* land, bool _static)
+	Bush::Bush(Land* land)
 	{
 		assert(land);
 		m_land = land;
 		m_id = land->AllocBushID();
-		m_static = _static;
 	}
 
 	void Bush::addArea(const Area& area)
@@ -76,12 +75,12 @@ namespace qtb
 
 	bool Bush::cross(float x, float y) const
 	{
-		if (!m_overall.cross(x, y))
+		if (!m_overall.contains(x, y))
 			return false;
 
 		for (AreaList::const_iterator it = m_areaList.begin(); it != m_areaList.end(); ++it)
 		{
-			if (it->cross(x, y))
+			if (it->contains(x, y))
 				return true;
 		}
 		return false;
