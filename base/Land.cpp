@@ -12,15 +12,12 @@ namespace qtb
 
 	Land::~Land()
 	{
-		for (BushPMap::iterator it = m_staticBush.begin(); it != m_staticBush.end(); ++it)
-		{
-			assert(it->second);
-			delete it->second;
-		}
+		clearStaticBush();
 	}
 
 	void Land::resetStaticBush(const AreaList& areaList)
 	{
+		clearStaticBush();
 		generateBushMap(areaList, m_staticBush);
 	}
 
@@ -52,10 +49,23 @@ namespace qtb
 				bush->addArea(*itArea);
 				for (size_t i = 1; i < overlaps.size(); ++i)
 				{
-					bush->splice(*(bushMap[overlaps[i]]));
+					Bush* spliceBush = bushMap[overlaps[i]];
+					bush->splice(*spliceBush);
 					bushMap.erase(overlaps[i]);
+					delete spliceBush;
 				}
 			}
 		}
 	}
+
+	void Land::clearStaticBush()
+	{
+		for (BushPMap::iterator it = m_staticBush.begin(); it != m_staticBush.end(); ++it)
+		{
+			assert(it->second);
+			delete it->second;
+		}
+		m_staticBush.clear();
+	}
+
 }

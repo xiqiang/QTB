@@ -5,6 +5,11 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include <windowsx.h>
+
+#define _CRTDBG_MAP_ALLOC
+#define _CRT_SECURE_NO_WARNINGS
+#include <crtdbg.h>
+
 #include "framework.h"
 #include "QTB.h"
 #include "base/Land.h"
@@ -45,10 +50,12 @@ BOOL                bViewStaticBush = TRUE;
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
+VOID                TermInstance(HINSTANCE);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 VOID                InitLand();
+VOID                TermLand();
 VOID                RandomStaticBush();
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
@@ -66,6 +73,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 在此处放置代码。
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
    // Initialize GDI+.
     GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -105,18 +113,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
+    TermInstance(hInstance);
     GdiplusShutdown(gdiplusToken);
-
-    if (land)
-    {
-        delete land;
-        land = NULL;
-    }
-    _CrtDumpMemoryLeaks();
+    //_CrtDumpMemoryLeaks();
 
     return (int) msg.wParam;
 }
-
 
 
 //
@@ -175,6 +177,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+VOID TermInstance(HINSTANCE hInstance)
+{
+    TermLand();
+}
 //
 //  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -301,8 +307,20 @@ VOID InitLand()
     RandomStaticBush();
 }
 
+VOID TermLand()
+{
+    if (land)
+    {
+        delete land;
+        land = NULL;
+    }
+}
+
 VOID RandomStaticBush()
 {
+    if (!land)
+        return;
+
     randAreaList.clear();
 
     for (int i = 0; i < RAND_AREA_COUNT; ++i)
@@ -353,6 +371,9 @@ VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 
 VOID DrawMain(Graphics& graphics)
 {
+    if (!land)
+        return;
+
     DrawQTree(graphics, land);
 
     if(bViewStaticAreas)
@@ -374,6 +395,9 @@ VOID DrawMain(Graphics& graphics)
 
 VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 {
+    if (!land)
+        return;
+
     assert(tree);
 
     const qtb::Area& area = tree->area();
@@ -391,18 +415,19 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 
 VOID DrawStaticAreas(Graphics& graphics)
 {
-    //Pen pen(Color(128, 0, 255, 0));
     SolidBrush brush(Color(64, 0, 255, 0));
     for (qtb::AreaList::const_iterator it = randAreaList.begin(); it != randAreaList.end(); ++it)
     {
         RectF rc(it->left, it->bottom, it->width(), it->height());
         graphics.FillRectangle(&brush, rc);
-       // graphics.DrawRectangle(&pen, rc);
     }
 }
 
 VOID DrawStaticBush(Graphics& graphics)
 {
+    if (!land)
+        return;
+
     const qtb::BushPMap& staticBush = land->GetStaticBush();
     for (qtb::BushPMap::const_iterator it = staticBush.begin(); it != staticBush.end(); ++it)
     {

@@ -2,6 +2,7 @@
 #define Editor_DrawData
 
 
+#include <objidl.h>
 #include <gdiplus.h>
 #include <map>
 

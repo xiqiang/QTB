@@ -27,6 +27,8 @@ namespace qtb
 
 		const BushPMap& GetStaticBush() const { return m_staticBush; }
 
+		void clearStaticBush();
+
 	private:
 		unsigned int	m_nextBushID;
 		unsigned int	m_nextBunchID;
