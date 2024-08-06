@@ -1,5 +1,5 @@
-#ifndef TreeBush_Bunch
-#define TreeBush_Bunch
+#ifndef QTB_Bunch
+#define QTB_Bunch
 
 #include "Bush.h"
 

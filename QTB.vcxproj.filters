@@ -13,8 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="TreeBunch">
-      <UniqueIdentifier>{03dcd435-cf6d-41c4-80d4-79a3b073d2ad}</UniqueIdentifier>
+    <Filter Include="base">
+      <UniqueIdentifier>{84f7f6d4-e556-467d-9047-59af789b798d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="editor">
+      <UniqueIdentifier>{18421959-5ed7-4381-8ccc-ac3226c37292}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -30,40 +33,43 @@
     <ClInclude Include="QTB.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Bush.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\Bush.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Area.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\Land.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Bunch.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\QTree.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Zone.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\Zone.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\Land.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\Area.h">
+      <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="TreeBunch\QTree.h">
-      <Filter>TreeBunch</Filter>
+    <ClInclude Include="base\Bunch.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\DrawData.h">
+      <Filter>editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TreeBunch\Bush.cpp">
-      <Filter>TreeBunch</Filter>
+    <ClCompile Include="base\Land.cpp">
+      <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="TreeBunch\Bunch.cpp">
-      <Filter>TreeBunch</Filter>
+    <ClCompile Include="base\Zone.cpp">
+      <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="TreeBunch\Zone.cpp">
-      <Filter>TreeBunch</Filter>
+    <ClCompile Include="base\Bunch.cpp">
+      <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="TreeBunch\Land.cpp">
-      <Filter>TreeBunch</Filter>
+    <ClCompile Include="base\Bush.cpp">
+      <Filter>base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

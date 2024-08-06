@@ -14,10 +14,18 @@ namespace qtb
 
 	void Bush::addArea(const Area& area)
 	{
-		m_overall.left = m_overall.left < area.left ? m_overall.left : area.left;
-		m_overall.right = m_overall.right > area.right ? m_overall.right : area.right;
-		m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
-		m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
+		if (m_areaList.empty())
+		{
+			m_overall = area;
+		}
+		else
+		{
+			m_overall.left = m_overall.left < area.left ? m_overall.left : area.left;
+			m_overall.right = m_overall.right > area.right ? m_overall.right : area.right;
+			m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
+			m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
+		}
+
 		m_areaList.push_back(area);
 	}
 

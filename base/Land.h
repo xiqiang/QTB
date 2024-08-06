@@ -1,5 +1,5 @@
-#ifndef TreeBush_Land
-#define TreeBush_Land
+#ifndef QTB_Land
+#define QTB_Land
 
 #include "Zone.h"
 #include "Bush.h"
@@ -11,6 +11,7 @@ namespace qtb
 	{
 	public:
 		Land(const Area& area);
+		virtual ~Land();
 
 	public:
 		unsigned int AllocBushID() {
@@ -23,6 +24,8 @@ namespace qtb
 
 		void resetStaticBush(const AreaList& areaList);
 		void generateBushMap(const AreaList& areaList, BushPMap& bushMap);
+
+		const BushPMap& GetStaticBush() const { return m_staticBush; }
 
 	private:
 		unsigned int	m_nextBushID;

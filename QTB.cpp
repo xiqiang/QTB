@@ -7,10 +7,10 @@
 #include <windowsx.h>
 #include "framework.h"
 #include "QTB.h"
-#include "TreeBunch/Land.h"
+#include "base/Land.h"
+#include "editor/DrawData.h"
 
 #pragma comment (lib,"Gdiplus.lib")
-
 using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
@@ -19,8 +19,8 @@ const int   LAND_WIDTH            = 600;
 const int   LAND_HEIGHT           = 600;
 const int   MIN_ZONE_SIZE         = 20;
 const int   RAND_AREA_COUNT       = 200;
-const float RAND_AREA_SIZE_MIN    = 2.0f;
-const float RAND_AREA_SIZE_MAX    = 20.0f;
+const float RAND_AREA_SIZE_MIN    = 3.0f;
+const float RAND_AREA_SIZE_MAX    = 30.0f;
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -35,8 +35,12 @@ Point               cursorDownPos;
 Point               cursorUpPos;
 Point               cursorPos;
 
+DrawData            drawData;
 qtb::Land*          land = NULL;
 qtb::AreaList       randAreaList;
+
+BOOL                bViewStaticAreas = TRUE;
+BOOL                bViewStaticBush = TRUE;
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -45,11 +49,13 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 VOID                InitLand();
+VOID                RandomStaticBush();
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
 VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
-VOID                DrawRandAreas(Graphics& graphics);
+VOID                DrawStaticAreas(Graphics& graphics);
+VOID                DrawStaticBush(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -185,6 +191,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_COMMAND:
         {
+            HMENU hmenuBar = GetMenu(hWnd);
             int wmId = LOWORD(wParam);
             // 分析菜单选择:
             switch (wmId)
@@ -195,6 +202,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            case IDM_LAND_RANDOMSTATICBUSH:
+                RandomStaticBush();
+                break;
+            case ID_VIEW_STATICAREAS:
+                {
+                    bViewStaticAreas = !bViewStaticAreas;
+                    UINT check = bViewStaticAreas ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_STATICAREAS, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_VIEW_STATICBUSH:
+            {
+                bViewStaticBush = !bViewStaticBush;
+                UINT check = bViewStaticBush ? MF_CHECKED : MF_UNCHECKED;
+                CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
+            }
+            break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -268,11 +292,18 @@ float RangeRand(float min, float max)
 
 VOID InitLand()
 {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     qtb::Area area(0, LAND_WIDTH, 0, LAND_HEIGHT);
     land = new qtb::Land(area);
     land->devide(MIN_ZONE_SIZE);
+
+    RandomStaticBush();
+}
+
+VOID RandomStaticBush()
+{
+    randAreaList.clear();
 
     for (int i = 0; i < RAND_AREA_COUNT; ++i)
     {
@@ -281,8 +312,10 @@ VOID InitLand()
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        randAreaList.push_back(qtb::Area(x-w, x+w, y-h,y+h));
+        randAreaList.push_back(qtb::Area(x - w, x + w, y - h, y + h));
     }
+
+    land->resetStaticBush(randAreaList);
 }
 
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
@@ -321,7 +354,11 @@ VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 VOID DrawMain(Graphics& graphics)
 {
     DrawQTree(graphics, land);
-    DrawRandAreas(graphics);
+
+    if(bViewStaticAreas)
+        DrawStaticAreas(graphics);
+    if (bViewStaticBush)
+        DrawStaticBush(graphics);
 
     // mouse
     Pen penMD(Color(255, 0, 255, 0));
@@ -352,12 +389,28 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
     }
 }
 
-VOID DrawRandAreas(Graphics& graphics)
+VOID DrawStaticAreas(Graphics& graphics)
 {
-    Pen pen(Color(128, 0, 255, 0));
+    //Pen pen(Color(128, 0, 255, 0));
+    SolidBrush brush(Color(64, 0, 255, 0));
     for (qtb::AreaList::const_iterator it = randAreaList.begin(); it != randAreaList.end(); ++it)
     {
         RectF rc(it->left, it->bottom, it->width(), it->height());
+        graphics.FillRectangle(&brush, rc);
+       // graphics.DrawRectangle(&pen, rc);
+    }
+}
+
+VOID DrawStaticBush(Graphics& graphics)
+{
+    const qtb::BushPMap& staticBush = land->GetStaticBush();
+    for (qtb::BushPMap::const_iterator it = staticBush.begin(); it != staticBush.end(); ++it)
+    {
+        const qtb::Bush* bush = it->second;
+        const qtb::Area& area = bush->overall();
+        RectF rc(area.left, area.bottom, area.width(), area.height());
+
+        Pen pen(drawData.GetBushRes(bush->id()).color);
         graphics.DrawRectangle(&pen, rc);
     }
 }

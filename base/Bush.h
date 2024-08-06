@@ -1,5 +1,5 @@
-#ifndef TreeBush_Bush
-#define TreeBush_Bush
+#ifndef QTB_Bush
+#define QTB_Bush
 
 #include <map>
 #include "Area.h"

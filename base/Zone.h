@@ -1,5 +1,5 @@
-#ifndef TreeBush_Zone
-#define TreeBush_Zone
+#ifndef QTB_Zone
+#define QTB_Zone
 
 #include "QTree.h"
 #include "Bunch.h"

@@ -140,23 +140,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="base\Area.h" />
+    <ClInclude Include="base\Bunch.h" />
+    <ClInclude Include="base\Bush.h" />
+    <ClInclude Include="base\Land.h" />
+    <ClInclude Include="base\QTree.h" />
+    <ClInclude Include="base\Zone.h" />
+    <ClInclude Include="editor\DrawData.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="QTB.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="TreeBunch\Area.h" />
-    <ClInclude Include="TreeBunch\Bush.h" />
-    <ClInclude Include="TreeBunch\Bunch.h" />
-    <ClInclude Include="TreeBunch\Land.h" />
-    <ClInclude Include="TreeBunch\QTree.h" />
-    <ClInclude Include="TreeBunch\Zone.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="base\Bunch.cpp" />
+    <ClCompile Include="base\Bush.cpp" />
+    <ClCompile Include="base\Land.cpp" />
+    <ClCompile Include="base\Zone.cpp" />
     <ClCompile Include="QTB.cpp" />
-    <ClCompile Include="TreeBunch\Bunch.cpp" />
-    <ClCompile Include="TreeBunch\Bush.cpp" />
-    <ClCompile Include="TreeBunch\Land.cpp" />
-    <ClCompile Include="TreeBunch\Zone.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="QTB.rc" />

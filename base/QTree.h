@@ -1,5 +1,5 @@
-#ifndef TreeBush_QTree
-#define TreeBush_QTree
+#ifndef QTB_QTree
+#define QTB_QTree
 
 #include <cassert>
 #include "Area.h"

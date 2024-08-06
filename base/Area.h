@@ -1,5 +1,5 @@
-#ifndef TreeBush_Area
-#define TreeBush_Area
+#ifndef QTB_Area
+#define QTB_Area
 
 #include <list>
 #include <vector>

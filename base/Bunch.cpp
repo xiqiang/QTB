@@ -16,10 +16,19 @@ namespace qtb
 	{
 		assert(bush);
 		const Area& bushArea = bush->overall();
-		m_overall.left = m_overall.left < bushArea.left ? m_overall.left : bushArea.left;
-		m_overall.right = m_overall.right > bushArea.right ? m_overall.right : bushArea.right;
-		m_overall.bottom = m_overall.bottom < bushArea.bottom ? m_overall.bottom : bushArea.bottom;
-		m_overall.top = m_overall.top > bushArea.top ? m_overall.top : bushArea.top;
+
+		if (m_bushList.empty())
+		{
+			m_overall = bushArea;
+		}
+		else
+		{
+			m_overall.left = m_overall.left < bushArea.left ? m_overall.left : bushArea.left;
+			m_overall.right = m_overall.right > bushArea.right ? m_overall.right : bushArea.right;
+			m_overall.bottom = m_overall.bottom < bushArea.bottom ? m_overall.bottom : bushArea.bottom;
+			m_overall.top = m_overall.top > bushArea.top ? m_overall.top : bushArea.top;
+		}
+
 		m_bushList.push_back(bush);
 	}
 

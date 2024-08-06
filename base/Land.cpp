@@ -1,3 +1,4 @@
+#include <cassert>
 #include "Land.h"
 
 namespace qtb
@@ -7,6 +8,15 @@ namespace qtb
 		, m_nextBushID(0)
 		, m_nextBunchID(0)
 	{
+	}
+
+	Land::~Land()
+	{
+		for (BushPMap::iterator it = m_staticBush.begin(); it != m_staticBush.end(); ++it)
+		{
+			assert(it->second);
+			delete it->second;
+		}
 	}
 
 	void Land::resetStaticBush(const AreaList& areaList)
