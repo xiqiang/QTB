@@ -49,6 +49,7 @@ qtb::AreaMap        dynamicAreaMap;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewDynamicAreas = TRUE;
 BOOL                bViewStaticBush = TRUE;
+BOOL                bViewDynamicBush = TRUE;
 BOOL                bViewBushGroup = TRUE;
 
 // 此代码模块中包含的函数的前向声明:
@@ -69,6 +70,7 @@ VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
 VOID                DrawStaticAreas(Graphics& graphics);
 VOID                DrawDynamicAreas(Graphics& graphics);
 VOID                DrawStaticBush(Graphics& graphics);
+VOID                DrawDynamicBush(Graphics& graphics);
 VOID                DrawBushGroup(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -240,6 +242,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     bViewStaticBush = !bViewStaticBush;
                     UINT check = bViewStaticBush ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_VIEW_DYNAMICBUSH:
+                {
+                    bViewDynamicBush = !bViewDynamicBush;
+                    UINT check = bViewDynamicBush ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICBUSH, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_BUSHGROUP:
@@ -429,6 +438,8 @@ VOID DrawMain(Graphics& graphics)
         DrawDynamicAreas(graphics);
     if (bViewStaticBush)
         DrawStaticBush(graphics);
+    if (bViewDynamicBush)
+        DrawDynamicBush(graphics);
     if (bViewBushGroup)
         DrawBushGroup(graphics);
 
@@ -501,6 +512,23 @@ VOID DrawStaticBush(Graphics& graphics)
     }
 }
 
+VOID DrawDynamicBush(Graphics& graphics)
+{
+    if (!land)
+        return;
+
+    const qtb::BushPMap& dynamicBush = land->getDynamicBush();
+    for (qtb::BushPMap::const_iterator it = dynamicBush.begin(); it != dynamicBush.end(); ++it)
+    {
+        const qtb::Bush* bush = it->second;
+        const qtb::Area& area = bush->overall();
+        RectF rc(area.left, area.bottom, area.width(), area.height());
+
+        Pen pen(drawData.GetBushRes(bush->id()).color);
+        graphics.DrawRectangle(&pen, rc);
+    }
+}
+
 VOID DrawBushGroup(Graphics& graphics)
 {
     if (!land)
@@ -514,7 +542,7 @@ VOID DrawBushGroup(Graphics& graphics)
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
         //Pen pen(drawData.GetBushGroupRes(bushGroup->id()).color);
-        Pen pen(drawData.GetZoneRes(bushGroup->zone()).color);
+        Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
         graphics.DrawRectangle(&pen, rc);
     }
 }

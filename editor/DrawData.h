@@ -31,6 +31,12 @@ public:
 	};
 	typedef std::map<qtb::Zone*, ZoneRes> ZoneResMap;
 
+	struct ZoneGenerationRes
+	{
+		Color color;
+	};
+	typedef std::map<unsigned int, ZoneGenerationRes> ZoneGenerationResMap;
+
 public:
 	const BushRes& GetBushRes(unsigned int id) {
 		BushResMap::iterator it = m_bushResMap.find(id);
@@ -71,11 +77,25 @@ public:
 		return ret.first->second;
 	}
 
+	const ZoneGenerationRes& GetZoneGenerationRes(unsigned int id) {
+		ZoneGenerationResMap::iterator it = m_zoneGenerationResMap.find(id);
+		if (it != m_zoneGenerationResMap.end())
+			return it->second;
+
+		ZoneGenerationRes res;
+		res.color = Color(255, rand() % 256, rand() % 256, rand() % 256);
+
+		std::pair<ZoneGenerationResMap::iterator, bool> ret = m_zoneGenerationResMap.insert(std::pair<unsigned int, ZoneGenerationRes>(id, res));
+		assert(ret.second);
+		return ret.first->second;
+	}
+
 
 private:
-	BushResMap		m_bushResMap;
-	BushGroupResMap	m_bushGroupResMap;
-	ZoneResMap		m_zoneResMap;
+	BushResMap				m_bushResMap;
+	BushGroupResMap			m_bushGroupResMap;
+	ZoneResMap				m_zoneResMap;
+	ZoneGenerationResMap	m_zoneGenerationResMap;
 };
 
 #endif

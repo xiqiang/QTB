@@ -1,6 +1,7 @@
 #ifndef QTB_QTree
 #define QTB_QTree
 
+#include <list>
 #include <cassert>
 #include "Area.h"
 
@@ -86,6 +87,21 @@ namespace qtb
 				return child->locateTree(area);
 			else
 				return this;
+		}
+
+		void getOerlapTrees(const Area& area, std::list<QTree*>& list) {
+			if (!m_area.overlap(area))
+				return;
+
+			list.push_back(this);
+			if (!m_hasChild)
+				return;
+
+			for (int i = 0; i < CHILD_COUNT; ++i)
+			{
+				assert(m_childs[i]);
+				m_childs[i]->getOerlapTrees(area, list);
+			}
 		}
 
 	protected:

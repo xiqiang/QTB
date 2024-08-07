@@ -129,23 +129,20 @@ namespace qtb
 		for (BushPMap::const_iterator itBush = m_dynamicBushMap.begin(); itBush != m_dynamicBushMap.end(); ++itBush)
 		{
 			std::vector<unsigned> overlaps;
+			std::list<QTree*> treeList;
+			getOerlapTrees(itBush->second->overall(), treeList);
 
-			Zone* zone = this;
-			while (zone)
+			for(std::list<QTree*>::iterator itTree = treeList.begin(); itTree != treeList.end(); ++itTree)
 			{
+				Zone* zone = dynamic_cast<Zone*>(*itTree);
+				assert(zone);
+
 				const BushGroupPMap& resideBushGroupMap = zone->getResideBushGroup();
 				for (BushGroupPMap::const_iterator itGroup = resideBushGroupMap.begin(); itGroup != resideBushGroupMap.end(); ++itGroup)
 				{
 					if (itGroup->second->overlap(*(itBush->second)))
 						overlaps.push_back(itGroup->first);
 				}
-
-				const Area& bushArea  = itBush->second->overall();
-				QTree* tree = zone->getChild(bushArea.x(), bushArea.y());
-				if (tree && tree->area().contains(bushArea))
-					zone = dynamic_cast<Zone*>(tree);
-				else
-					zone = NULL;
 			}
 
 			if (overlaps.empty())
