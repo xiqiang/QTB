@@ -36,11 +36,14 @@ namespace qtb
 		void					generateBushMap(const AreaMap& areaMap, BushPMap& bushMap);
 		void					clearBushMap(BushPMap& bushMap);
 
-		void					rebuildBushGroup();
 		void					clearBushGroup();
 		const BushGroupPMap&	getBushGroup() const { return m_bushGroupMap; }
 
 		void					rebuildStaticBushGroup();
+		void					updateBushGroup();
+
+	private:
+		void					allocResideBushGroup(BushGroup* group);
 
 	private:
 		unsigned int	m_nextBushID;
@@ -49,6 +52,7 @@ namespace qtb
 
 	private:
 		BushPMap		m_staticBushMap;
+		BushPMap		m_dynamicBushMap;
 		AreaMap			m_dynamicAreaMap;
 		BushGroupPMap	m_bushGroupMap;
 

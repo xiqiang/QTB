@@ -14,12 +14,15 @@ namespace qtb
 		virtual QTree*	newChild(const Area& area);
 
 	public:
-		unsigned int	generation() const { return m_generation; }
+		unsigned int			generation() const { return m_generation; }
 
 	public:
-		bool			bushCross(float x, float y, unsigned int* bushID = NULL) const;
-		void			addResideBushGroup(BushGroup* group);
-		void			removeResideBushGroup(BushGroup* group);
+		bool					bushCross(float x, float y, unsigned int* bushID = NULL) const;
+
+		void					addResideBushGroup(BushGroup* group);
+		void					removeResideBushGroup(BushGroup* group);
+		void					removeResideBushGroup(unsigned int groupID);
+		const BushGroupPMap&	getResideBushGroup() const { return m_resideBushGroupMap; }
 
 	private:
 		unsigned int	m_generation;

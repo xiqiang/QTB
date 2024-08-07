@@ -30,7 +30,16 @@ namespace qtb
 	void Zone::removeResideBushGroup(BushGroup* group)
 	{
 		assert(group->m_zone == this);
+		group->m_zone = NULL;
 		m_resideBushGroupMap.erase(group->id());
+	}
+
+	void Zone::removeResideBushGroup(unsigned int groupID)
+	{
+		BushGroupPMap::iterator it = m_resideBushGroupMap.find(groupID);
+		assert(it != m_resideBushGroupMap.end());
+		it->second->m_zone = NULL;
+		m_resideBushGroupMap.erase(groupID);
 	}
 
 	bool Zone::bushCross(float x, float y, unsigned int* bushID /*= NULL*/) const

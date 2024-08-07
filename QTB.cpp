@@ -221,10 +221,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_LAND_RANDOMDYNAMICAREAS:
                 RandomDynamicBush();
                 break;
-            case ID_LAND_REBUILD:
-                if(land)
-                    land->rebuildStaticBushGroup();
-                break;
             case ID_VIEW_STATICAREAS:
                 {
                     bViewStaticAreas = !bViewStaticAreas;
@@ -334,7 +330,6 @@ VOID InitLand()
 
     RandomStaticBush();
     RandomDynamicBush();
-    land->rebuildStaticBushGroup();
 }
 
 VOID TermLand()
@@ -364,6 +359,7 @@ VOID RandomStaticBush()
     }
 
     land->resetStaticBush(staticAreaMap);
+    land->updateBushGroup();
 }
 
 VOID RandomDynamicBush()
@@ -384,6 +380,7 @@ VOID RandomDynamicBush()
     }
 
     land->setDynamicAreas(dynamicAreaMap);
+    land->updateBushGroup();
 }
 
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
@@ -516,7 +513,8 @@ VOID DrawBushGroup(Graphics& graphics)
         const qtb::Area& area = bushGroup->overall();
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
-        Pen pen(drawData.GetBushGroupRes(bushGroup->id()).color);
+        //Pen pen(drawData.GetBushGroupRes(bushGroup->id()).color);
+        Pen pen(drawData.GetZoneRes(bushGroup->zone()).color);
         graphics.DrawRectangle(&pen, rc);
     }
 }
