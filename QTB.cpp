@@ -50,10 +50,10 @@ qtb::AreaMap        dynamicAreaMap;
 
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewDynamicAreas = TRUE;
-BOOL                bViewStaticBush = TRUE;
-BOOL                bViewDynamicBush = TRUE;
+BOOL                bViewStaticBush = FALSE;
+BOOL                bViewDynamicBush = FALSE;
 BOOL                bViewSelectedBushGroup = TRUE;
-BOOL                bViewBushGroup = TRUE;
+BOOL                bViewBushGroup = FALSE;
 
 PerfTool            perfTool;
 
@@ -649,7 +649,7 @@ VOID DrawTexts(Graphics& graphics)
     TCHAR string[64] = _T("");
 
     // generate static bush
-    PointF origin(area.right + 50, 0.0f);
+    PointF origin(area.right + MIN_ZONE_SIZE, 0.0f);
     _sntprintf_s(string, 64, _T("GenerateStaticBushTime: %f"), dGenerateStaticBushTime);
     graphics.DrawString( string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
