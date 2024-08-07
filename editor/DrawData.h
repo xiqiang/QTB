@@ -5,6 +5,7 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include <map>
+#include "../base/Zone.h"
 
 using namespace Gdiplus;
 
@@ -23,6 +24,12 @@ public:
 		Color color;
 	};
 	typedef std::map<unsigned int, BushGroupRes> BushGroupResMap;
+
+	struct ZoneRes
+	{
+		Color color;
+	};
+	typedef std::map<qtb::Zone*, ZoneRes> ZoneResMap;
 
 public:
 	const BushRes& GetBushRes(unsigned int id) {
@@ -51,10 +58,24 @@ public:
 		return ret.first->second;
 	}
 
+	const ZoneRes& GetZoneRes(qtb::Zone* zone) {
+		ZoneResMap::iterator it = m_zoneResMap.find(zone);
+		if (it != m_zoneResMap.end())
+			return it->second;
+
+		ZoneRes res;
+		res.color = Color(255, rand() % 256, rand() % 256, rand() % 256);
+
+		std::pair<ZoneResMap::iterator, bool> ret = m_zoneResMap.insert(std::pair<qtb::Zone*, ZoneRes>(zone, res));
+		assert(ret.second);
+		return ret.first->second;
+	}
+
 
 private:
-	BushResMap m_bushResMap;
-	BushGroupResMap m_bushGroupResMap;
+	BushResMap		m_bushResMap;
+	BushGroupResMap	m_bushGroupResMap;
+	ZoneResMap		m_zoneResMap;
 };
 
 #endif

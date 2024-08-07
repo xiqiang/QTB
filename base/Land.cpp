@@ -139,10 +139,30 @@ namespace qtb
 	{
 		for (BushGroupPMap::iterator it = m_bushGroupMap.begin(); it != m_bushGroupMap.end(); ++it)
 		{
-			assert(it->second);
-			delete it->second;
+			BushGroup* group = it->second;
+			assert(group);
+			if (group->zone())
+				group->zone()->removeResideBushGroup(group);
+			delete group;
 		}
 		m_bushGroupMap.clear();
+	}
+
+	void Land::rebuildStaticBushGroup()
+	{
+		clearBushGroup();
+
+		// static
+		for (BushPMap::iterator itBush = m_staticBushMap.begin(); itBush != m_staticBushMap.end(); ++itBush)
+		{
+			BushGroup* group = new BushGroup(this);
+			m_bushGroupMap[group->id()] = group;
+			group->addBush(itBush->second);
+
+			Zone* zone = dynamic_cast<Zone*>(locateTree(group->overall()));
+			assert(zone);
+			zone->addResideBushGroup(group);
+		}
 	}
 
 }

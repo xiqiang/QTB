@@ -21,6 +21,7 @@ namespace qtb
 			m_area = area;
 			m_parent = parent;
 			memset(m_childs, 0, sizeof(m_childs));
+			m_hasChild = false;
 		}
 
 		virtual ~QTree() {
@@ -66,12 +67,32 @@ namespace qtb
 			Area areaRT(cx, cx + childWidth, cy, cy + childHeight);
 			m_childs[RT] = newChild(areaRT);
 			m_childs[RT]->devide(minQTreeSize);
+
+			m_hasChild = true;
+		}
+
+		QTree* getChild(float x, float y) {
+			if (!m_hasChild)
+				return NULL;
+
+			int ix = x - m_area.x() >= 0 ? 1 : 0;
+			int iy = y - m_area.y() >= 0 ? 1 : 0;
+			return m_childs[(ix << 1) | iy];
+		}
+
+		QTree* locateTree(const Area& area) {
+			QTree* child = getChild(area.x(), area.y());
+			if (child && child->area().contains(area))
+				return child->locateTree(area);
+			else
+				return this;
 		}
 
 	protected:
 		Area	m_area;
 		QTree*	m_parent;
 		QTree*	m_childs[CHILD_COUNT];
+		bool	m_hasChild;
 	};
 }
 

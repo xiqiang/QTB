@@ -16,15 +16,21 @@ namespace qtb
 	{
 		return new Zone(area, this);
 	}
-	
-	void Zone::addBushGroup(BushGroup* bunch)
-	{
-		assert(bunch);
-		assert(NULL == bunch->m_zone);
 
-		bunch->m_zone = this;
-		assert(m_bushGroupMap.find(bunch->id()) == m_bushGroupMap.end());
-		m_bushGroupMap[bunch->id()] = bunch;
+	void Zone::addResideBushGroup(BushGroup* group)
+	{
+		assert(group);
+		assert(NULL == group->m_zone);
+
+		group->m_zone = this;
+		assert(m_resideBushGroupMap.find(group->id()) == m_resideBushGroupMap.end());
+		m_resideBushGroupMap[group->id()] = group;
+	}
+
+	void Zone::removeResideBushGroup(BushGroup* group)
+	{
+		assert(group->m_zone == this);
+		m_resideBushGroupMap.erase(group->id());
 	}
 
 	bool Zone::bushCross(float x, float y, unsigned int* bushID /*= NULL*/) const
@@ -32,7 +38,7 @@ namespace qtb
 		if (!m_area.contains(x, y))
 			return false;
 
-		for (BushGroupPMap::const_iterator it = m_bushGroupMap.begin(); it != m_bushGroupMap.end(); ++it) {
+		for (BushGroupPMap::const_iterator it = m_resideBushGroupMap.begin(); it != m_resideBushGroupMap.end(); ++it) {
 			BushGroup* bunch = it->second;
 			assert(bunch);
 

@@ -40,6 +40,8 @@ namespace qtb
 		void					clearBushGroup();
 		const BushGroupPMap&	getBushGroup() const { return m_bushGroupMap; }
 
+		void					rebuildStaticBushGroup();
+
 	private:
 		unsigned int	m_nextBushID;
 		unsigned int	m_nextBushGroupID;

@@ -223,7 +223,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_LAND_REBUILD:
                 if(land)
-                    land->rebuildBushGroup();
+                    land->rebuildStaticBushGroup();
                 break;
             case ID_VIEW_STATICAREAS:
                 {
@@ -334,7 +334,7 @@ VOID InitLand()
 
     RandomStaticBush();
     RandomDynamicBush();
-    land->rebuildBushGroup();
+    land->rebuildStaticBushGroup();
 }
 
 VOID TermLand()

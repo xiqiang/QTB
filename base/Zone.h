@@ -11,17 +11,19 @@ namespace qtb
 	{
 	public:
 		Zone(const Area& area, Zone* parent = NULL);
-
 		virtual QTree*	newChild(const Area& area);
 
 	public:
 		unsigned int	generation() const { return m_generation; }
-		void			addBushGroup(BushGroup* bunch);
+
+	public:
 		bool			bushCross(float x, float y, unsigned int* bushID = NULL) const;
+		void			addResideBushGroup(BushGroup* group);
+		void			removeResideBushGroup(BushGroup* group);
 
 	private:
 		unsigned int	m_generation;
-		BushGroupPMap	m_bushGroupMap;
+		BushGroupPMap	m_resideBushGroupMap;
 	};
 }
 
