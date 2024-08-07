@@ -147,6 +147,7 @@
     <ClInclude Include="base\QTree.h" />
     <ClInclude Include="base\Zone.h" />
     <ClInclude Include="editor\DrawData.h" />
+    <ClInclude Include="editor\PerfTool.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="QTB.h" />
     <ClInclude Include="Resource.h" />

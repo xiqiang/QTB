@@ -54,6 +54,9 @@
     <ClInclude Include="editor\DrawData.h">
       <Filter>editor</Filter>
     </ClInclude>
+    <ClInclude Include="editor\PerfTool.h">
+      <Filter>editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp">
