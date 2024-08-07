@@ -17,6 +17,22 @@ namespace qtb
 		return new Zone(area, this);
 	}
 
+	unsigned int Zone::crossBushGroupID(float x, float y)
+	{
+		if (!m_area.contains(x, y))
+			return -1;
+
+		unsigned int bushID = -1;
+		if(bushCross(x, y, &bushID))
+			return bushID;
+
+		Zone* child = dynamic_cast<Zone*>(getChild(x, y));
+		if (child)
+			return child->crossBushGroupID(x, y);
+
+		return -1;
+	}
+
 	void Zone::addResideBushGroup(BushGroup* group)
 	{
 		assert(group);
@@ -48,16 +64,17 @@ namespace qtb
 			return false;
 
 		for (BushGroupPMap::const_iterator it = m_resideBushGroupMap.begin(); it != m_resideBushGroupMap.end(); ++it) {
-			BushGroup* bunch = it->second;
-			assert(bunch);
+			BushGroup* group = it->second;
+			assert(group);
 
-			if (bunch->bushCheck(x, y)) {
+			if (group->bushCheck(x, y)) {
 				if (bushID)
-					*bushID = bunch->id();
+					*bushID = group->id();
 				return true;
 			}
 		}
 
 		return false;
 	}
+
 }

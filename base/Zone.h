@@ -15,14 +15,16 @@ namespace qtb
 
 	public:
 		unsigned int			generation() const { return m_generation; }
+		unsigned int			crossBushGroupID(float x, float y);
 
 	public:
-		bool					bushCross(float x, float y, unsigned int* bushID = NULL) const;
-
 		void					addResideBushGroup(BushGroup* group);
 		void					removeResideBushGroup(BushGroup* group);
 		void					removeResideBushGroup(unsigned int groupID);
 		const BushGroupPMap&	getResideBushGroup() const { return m_resideBushGroupMap; }
+
+	private:
+		bool					bushCross(float x, float y, unsigned int* bushID = NULL) const;
 
 	private:
 		unsigned int	m_generation;

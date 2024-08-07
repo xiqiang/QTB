@@ -35,11 +35,6 @@ namespace qtb
 
 		virtual QTree*	newChild(const Area& area) = 0;
 
-		QTree* getChild(unsigned int index) {
-			assert(index < CHILD_COUNT);
-			return m_childs[index];
-		}
-
 	public:
 		const Area& area() { return m_area; }
 
@@ -70,6 +65,11 @@ namespace qtb
 			m_childs[RT]->devide(minQTreeSize);
 
 			m_hasChild = true;
+		}
+
+		QTree* getChild(unsigned int index) {
+			assert(index < CHILD_COUNT);
+			return m_childs[index];
 		}
 
 		QTree* getChild(float x, float y) {

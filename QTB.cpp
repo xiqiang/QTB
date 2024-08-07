@@ -40,6 +40,7 @@ ULONG_PTR           gdiplusToken;
 Point               cursorDownPos;
 Point               cursorUpPos;
 Point               cursorPos;
+unsigned int        cursorBushGroupID = -1;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
@@ -291,6 +292,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             cursorPos.X = GET_X_LPARAM(lParam);
             cursorPos.Y = GET_Y_LPARAM(lParam);
+
+            if (land)
+                cursorBushGroupID = land->crossBushGroupID((float)cursorPos.X, (float)cursorPos.Y);
         }
         break;
     default:
@@ -444,6 +448,7 @@ VOID DrawMain(Graphics& graphics)
         DrawBushGroup(graphics);
 
     // mouse
+    /*
     Pen penMD(Color(255, 0, 255, 0));
     Rect rcMD(cursorDownPos.X - 3, cursorDownPos.Y - 3, 6, 6);
     graphics.DrawEllipse(&penMD, rcMD);
@@ -453,6 +458,7 @@ VOID DrawMain(Graphics& graphics)
     Pen penMU(Color(255, 0, 255, 255));
     Rect rcMU(cursorUpPos.X - 3, cursorUpPos.Y - 3, 6, 6);
     graphics.DrawEllipse(&penMU, rcMU);
+    */
 }
 
 VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
@@ -541,7 +547,12 @@ VOID DrawBushGroup(Graphics& graphics)
         const qtb::Area& area = bushGroup->overall();
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
-        //Pen pen(drawData.GetBushGroupRes(bushGroup->id()).color);
+        if (bushGroup->id() == cursorBushGroupID)
+        {
+            SolidBrush solidBrush(drawData.GetBushGroupRes(bushGroup->id()).color);
+            graphics.FillRectangle(&solidBrush, rc);
+        }
+
         Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
         graphics.DrawRectangle(&pen, rc);
     }
