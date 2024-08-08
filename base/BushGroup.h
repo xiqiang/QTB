@@ -22,11 +22,13 @@ namespace qtb
 		Zone*				zone() const { return m_zone; }
 
 		void				addBush(Bush* bush);
+		void				removeBush(unsigned int bushID);
+
 		bool				overlap(const Bush& r) const;
 		void				splice(BushGroup& r);
 		bool				bushCheck(float x, float y, unsigned int* bushID = NULL) const;
 
-		const BushPList&	bushList() { return m_bushList; }
+		const BushPMap&		bushMap() { return m_bushMap; }
 
 	private:
 		Land*			m_land;
@@ -34,7 +36,7 @@ namespace qtb
 		unsigned int	m_id;
 
 	private:
-		BushPList		m_bushList;
+		BushPMap		m_bushMap;
 		Area			m_overall;
 	};
 

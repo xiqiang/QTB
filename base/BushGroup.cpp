@@ -15,9 +15,11 @@ namespace qtb
 	void BushGroup::addBush(Bush* bush)
 	{
 		assert(bush);
+		assert(m_bushMap.find(bush->id()) == m_bushMap.end());
+
 		const Area& bushArea = bush->overall();
 
-		if (m_bushList.empty())
+		if (m_bushMap.empty())
 		{
 			m_overall = bushArea;
 		}
@@ -29,8 +31,14 @@ namespace qtb
 			m_overall.top = m_overall.top > bushArea.top ? m_overall.top : bushArea.top;
 		}
 
-		m_bushList.push_back(bush);
+		m_bushMap[bush->id()] = bush;
 		bush->m_group = this;
+	}
+
+	void BushGroup::removeBush(unsigned int bushID)
+	{
+		assert(m_bushMap.find(bushID) != m_bushMap.end());
+		m_bushMap.erase(bushID);
 	}
 
 	bool BushGroup::overlap(const Bush& bush) const
@@ -38,9 +46,11 @@ namespace qtb
 		if (!m_overall.overlap(bush.overall()))
 			return false;
 
-		for (BushPList::const_iterator it = m_bushList.begin(); it != m_bushList.end(); ++it)
+		for (BushPMap::const_iterator it = m_bushMap.begin(); it != m_bushMap.end(); ++it)
 		{
-			if ((*it)->overlap(bush))
+			assert(it->second);
+
+			if (it->second->overlap(bush))
 				return true;
 		}
 		return false;
@@ -54,11 +64,14 @@ namespace qtb
 		m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
 		m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
 
-		for (BushPList::iterator it = r.m_bushList.begin(); it != r.m_bushList.end(); ++it)
-			(*it)->m_group = this;
+		for (BushPMap::iterator it = r.m_bushMap.begin(); it != r.m_bushMap.end(); ++it)
+		{
+			assert(it->second);
+			it->second->m_group = this;
+		}
 
-		m_bushList.splice(m_bushList.end(), r.m_bushList);
-		r.m_bushList.clear();
+		m_bushMap.insert(r.m_bushMap.begin(), r.m_bushMap.end());
+		r.m_bushMap.clear();
 	}
 
 	bool BushGroup::bushCheck(float x, float y, unsigned int* bushID /*= NULL*/) const
@@ -66,8 +79,8 @@ namespace qtb
 		if (!m_overall.contains(x, y))
 			return false;
 
-		for (BushPList::const_iterator it = m_bushList.begin(); it != m_bushList.end(); ++it) {
-			const Bush* bush = *it;
+		for (BushPMap::const_iterator it = m_bushMap.begin(); it != m_bushMap.end(); ++it) {
+			const Bush* bush = it->second;
 			assert(bush);
 			if (bush->cross(x, y))
 			{

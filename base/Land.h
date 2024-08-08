@@ -36,8 +36,10 @@ namespace qtb
 
 	private:
 		void					generateBushMap(const AreaMap& areaMap, BushPMap& bushMap);
+		void					recycleBushGroup(BushGroup* group);
+
 		void					resideBush(Bush* bush);
-		void					allocResideBushGroup(BushGroup* group);
+		void					resideBushGroup(BushGroup* group);
 
 		void					clearBushMap(BushPMap& bushMap);
 		void					clearBushGroup();

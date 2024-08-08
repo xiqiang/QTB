@@ -31,7 +31,7 @@ namespace qtb
 			BushGroup* group = new BushGroup(this);
 			m_bushGroupMap[group->id()] = group;
 			group->addBush(itBush->second);
-			allocResideBushGroup(group);
+			resideBushGroup(group);
 		}
 	}
 
@@ -51,26 +51,20 @@ namespace qtb
 		if (m_dynamicBushMap.end() == itFind)
 			return false;
 
-		Bush* bushFind = itFind->second;
-		assert(bushFind);
+		Bush* bush = itFind->second;
+		assert(bush);
 
-		BushGroup* group = bushFind->group();
+		BushGroup* group = bush->group();
 		assert(group);
 
 		assert(group->zone());
 		group->zone()->removeResideBushGroup(group->id());
 
-		const BushPList& bushList = group->bushList();
-		for (BushPList::const_iterator itBush = bushList.begin(); itBush != bushList.end(); ++itBush)
-		{
-			if (*itBush != bushFind)
-				resideBush(*itBush);
-		}
+		group->removeBush(id);
+		recycleBushGroup(group);
 
 		m_dynamicBushMap.erase(id);
-		delete bushFind;
-		m_bushGroupMap.erase(group->id());
-		delete group;
+		delete bush;
 
 		return true;
 	}
@@ -111,8 +105,56 @@ namespace qtb
 		}
 	}
 
+	void Land::recycleBushGroup(BushGroup* group)
+	{
+		assert(group);
+		assert(m_bushGroupMap.find(group->id()) != m_bushGroupMap.end());
+		BushGroupPMap groupMap;
+
+		const BushPMap& bushMap = group->bushMap();
+		for (BushPMap::const_iterator itBush = bushMap.begin(); itBush != bushMap.end(); ++itBush)
+		{
+			std::vector<unsigned> overlaps;
+			for (BushGroupPMap::iterator itGroup = groupMap.begin(); itGroup != groupMap.end(); ++itGroup)
+			{
+				if (itGroup->second->overlap(*(itBush->second)))
+					overlaps.push_back(itGroup->first);
+			}
+
+			if (overlaps.empty())
+			{
+				BushGroup* cacheGroup = new BushGroup(this);
+				groupMap[cacheGroup->id()] = cacheGroup;
+				cacheGroup->addBush(itBush->second);
+			}
+			else
+			{
+				BushGroup* cacheGroup = groupMap[overlaps[0]];
+				cacheGroup->addBush(itBush->second);
+				for (size_t i = 1; i < overlaps.size(); ++i)
+				{
+					BushGroup* spliceGroup = groupMap[overlaps[i]];
+					assert(spliceGroup);
+					cacheGroup->splice(*spliceGroup);
+
+					groupMap.erase(overlaps[i]);
+					delete spliceGroup;
+				}
+			}
+		}
+
+		for (BushGroupPMap::const_iterator itGroup = groupMap.begin(); itGroup != groupMap.end(); ++itGroup)
+			resideBushGroup(itGroup->second);
+
+		m_bushGroupMap.insert(groupMap.begin(), groupMap.end());
+		m_bushGroupMap.erase(group->id());
+		delete group;
+	}
+
 	void Land::resideBush(Bush* bush)
 	{
+		assert(bush);
+
 		std::vector<unsigned> overlaps;
 		std::list<QTree*> treeList;
 		getOerlapTrees(bush->overall(), treeList);
@@ -135,7 +177,7 @@ namespace qtb
 			BushGroup* group = new BushGroup(this);
 			m_bushGroupMap[group->id()] = group;
 			group->addBush(bush);
-			allocResideBushGroup(group);
+			resideBushGroup(group);
 		}
 		else
 		{
@@ -157,11 +199,11 @@ namespace qtb
 				delete spliceGroup;
 			}
 
-			allocResideBushGroup(group);
+			resideBushGroup(group);
 		}
 	}
 
-	void Land::allocResideBushGroup(BushGroup* group)
+	void Land::resideBushGroup(BushGroup* group)
 	{
 		assert(group->zone() == NULL);
 		Zone* zone = dynamic_cast<Zone*>(locateTree(group->overall()));
