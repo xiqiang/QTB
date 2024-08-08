@@ -29,8 +29,6 @@ namespace qtb
 		void					resetStaticBush(const AreaMap& areaMap);
 		const BushPMap&			getStaticBush() const { return m_staticBushMap; }
 
-		unsigned int			addDynamicArea(const Area& area);
-		void					removeDynamicArea(unsigned int id);
 		void					setDynamicAreas(const AreaMap& areas);
 		const BushPMap&			getDynamicBush() const { return m_dynamicBushMap; }
 
@@ -43,7 +41,11 @@ namespace qtb
 		void					rebuildStaticBushGroup();
 		void					updateBushGroup();
 
+		unsigned int			createDynamicBush(const Area& area);
+		void					removeDynamicBush(unsigned int id);
+
 	private:
+		void					resideBush(Bush* bush);
 		void					allocResideBushGroup(BushGroup* group);
 
 	private:

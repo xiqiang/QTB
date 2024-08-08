@@ -17,14 +17,16 @@ namespace qtb
 		BushGroup(Land* land);
 
 	public:
-		unsigned int	id() const { return m_id; }
-		const Area&		overall() const { return m_overall; }
-		Zone* zone()	const { return m_zone; }
+		unsigned int		id() const { return m_id; }
+		const Area&			overall() const { return m_overall; }
+		Zone*				zone() const { return m_zone; }
 
-		void			addBush(Bush* bush);
-		bool			overlap(const Bush& r) const;
-		void			splice(BushGroup& r);
-		bool			bushCheck(float x, float y) const;
+		void				addBush(Bush* bush);
+		bool				overlap(const Bush& r) const;
+		void				splice(BushGroup& r);
+		bool				bushCheck(float x, float y) const;
+
+		const BushPList&	bushList() { return m_bushList; }
 
 	private:
 		Land*			m_land;

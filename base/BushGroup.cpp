@@ -30,6 +30,7 @@ namespace qtb
 		}
 
 		m_bushList.push_back(bush);
+		bush->m_group = this;
 	}
 
 	bool BushGroup::overlap(const Bush& bush) const

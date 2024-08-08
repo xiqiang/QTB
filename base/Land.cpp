@@ -8,7 +8,6 @@ namespace qtb
 		: Zone(area, NULL)
 		, m_nextBushID(0)
 		, m_nextBushGroupID(0)
-		, m_nextAreaID(0)
 	{
 	}
 
@@ -23,20 +22,6 @@ namespace qtb
 	{
 		clearBushMap(m_staticBushMap);
 		generateBushMap(areaMap, m_staticBushMap);
-	}
-
-	unsigned int Land::addDynamicArea(const Area& area)
-	{
-		unsigned int areaID = AllocAreaID();
-		m_dynamicAreaMap[areaID] = area;
-		updateBushGroup();
-		return areaID;
-	}
-		
-	void Land::removeDynamicArea(unsigned int id)
-	{
-		m_dynamicAreaMap.erase(id);
-		updateBushGroup();
 	}
 
 	void Land::setDynamicAreas(const AreaMap& areas)
@@ -172,6 +157,90 @@ namespace qtb
 
 				allocResideBushGroup(group);
 			}
+		}
+	}
+
+	unsigned int Land::createDynamicBush(const Area& area)
+	{
+		Bush* bush = new Bush(this);
+		bush->addArea(area);
+		m_dynamicBushMap[bush->id()] = bush;
+
+		resideBush(bush);
+		return bush->id();
+	}
+
+	void Land::removeDynamicBush(unsigned int id)
+	{
+		BushPMap::iterator itFind = m_dynamicBushMap.find(id);
+		if (m_dynamicBushMap.end() == itFind)
+			return;
+
+		Bush* bushFind = itFind->second;
+		assert(bushFind);
+
+		BushGroup* group = bushFind->group();
+		assert(group);
+
+		assert(group->zone());
+		group->zone()->removeResideBushGroup(group);
+		const BushPList& bushList = group->bushList();
+		for (BushPList::const_iterator itBush = bushList.begin(); itBush != bushList.end(); ++itBush)
+		{
+			if (*itBush == bushFind)
+				continue;
+			resideBush(*itBush);
+		}
+
+		m_dynamicBushMap.erase(id);
+		delete bushFind;
+	}
+
+	void Land::resideBush(Bush* bush)
+	{
+		std::vector<unsigned> overlaps;
+		std::list<QTree*> treeList;
+		getOerlapTrees(bush->overall(), treeList);
+
+		for (std::list<QTree*>::iterator itTree = treeList.begin(); itTree != treeList.end(); ++itTree)
+		{
+			Zone* zone = dynamic_cast<Zone*>(*itTree);
+			assert(zone);
+
+			const BushGroupPMap& resideBushGroupMap = zone->getResideBushGroup();
+			for (BushGroupPMap::const_iterator itGroup = resideBushGroupMap.begin(); itGroup != resideBushGroupMap.end(); ++itGroup)
+			{
+				if (itGroup->second->overlap(*(bush)))
+					overlaps.push_back(itGroup->first);
+			}
+		}
+
+		if (overlaps.empty())
+		{
+			BushGroup* group = new BushGroup(this);
+			m_bushGroupMap[group->id()] = group;
+			group->addBush(bush);
+			allocResideBushGroup(group);
+		}
+		else
+		{
+			BushGroup* group = m_bushGroupMap[overlaps[0]];
+			assert(group->zone());
+			group->zone()->removeResideBushGroup(overlaps[0]);
+			group->addBush(bush);
+
+			for (size_t i = 1; i < overlaps.size(); ++i)
+			{
+				BushGroup* spliceGroup = m_bushGroupMap[overlaps[i]];
+				assert(spliceGroup->zone());
+				spliceGroup->zone()->removeResideBushGroup(overlaps[i]);
+
+				group->splice(*spliceGroup);
+				m_bushGroupMap.erase(overlaps[i]);
+				delete spliceGroup;
+			}
+
+			allocResideBushGroup(group);
 		}
 	}
 

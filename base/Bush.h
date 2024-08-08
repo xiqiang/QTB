@@ -7,14 +7,19 @@
 namespace qtb 
 {
 	class Land;
+	class BushGroup;
 
 	class Bush
 	{
+	public:
+		friend class BushGroup;
+
 	public:
 		Bush(Land* land);
 
 	public:
 		unsigned int	id() const { return m_id; }
+		BushGroup*		group() const { return m_group; }
 		const Area&		overall() const { return m_overall; }
 
 		void			addArea(const Area& area);
@@ -25,6 +30,7 @@ namespace qtb
 
 	private:
 		Land*			m_land;
+		BushGroup*		m_group;
 		unsigned int	m_id;
 
 	private:

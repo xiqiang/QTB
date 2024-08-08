@@ -21,9 +21,9 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-const int   LAND_WIDTH              = 700;
-const int   LAND_HEIGHT             = 700;
-const int   MIN_ZONE_SIZE           = 20;
+const float LAND_WIDTH              = 700.0f;
+const float LAND_HEIGHT             = 700.0f;
+const float MIN_ZONE_SIZE           = 20.0f;
 const int   STATIC_AREA_COUNT       = 200;
 const int   DYNAMIC_AREA_COUNT      = 200;
 const float RAND_AREA_SIZE_MIN      = 4.0f;
@@ -38,6 +38,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
 
+BOOL                bMouseDown = FALSE;
 Point               cursorDownPos;
 Point               cursorUpPos;
 Point               cursorPos;
@@ -84,6 +85,7 @@ VOID                TermLand();
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
 VOID                UpdateBush();
+VOID                GetMouseArea(qtb::Area& area);
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
@@ -94,6 +96,7 @@ VOID                DrawStaticBush(Graphics& graphics);
 VOID                DrawDynamicBush(Graphics& graphics);
 VOID                DrawSelectedBushGroup(Graphics& graphics);
 VOID                DrawBushGroup(Graphics& graphics);
+VOID                DrawMouseOperate(Graphics& graphics);
 VOID                DrawTexts(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -244,7 +247,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 RandomStaticBush();
                 break;
             case ID_LAND_RANDOMDYNAMICAREAS:
-                RandomDynamicBush();
+                //RandomDynamicBush();
                 break;
             case ID_VIEW_STATICAREAS:
                 {
@@ -309,12 +312,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             cursorDownPos.X = GET_X_LPARAM(lParam);
             cursorDownPos.Y = GET_Y_LPARAM(lParam);
+            bMouseDown = TRUE;
         }
         break;
     case WM_LBUTTONUP:
         {
             cursorUpPos.X = GET_X_LPARAM(lParam);
             cursorUpPos.Y = GET_Y_LPARAM(lParam);
+            bMouseDown = FALSE;
+
+            if (land)
+            {
+                qtb::Area area;
+                GetMouseArea(area);
+                land->createDynamicBush(area);
+            }
         }
         break;
     case WM_MOUSEMOVE:
@@ -379,7 +391,7 @@ VOID InitLand()
     land->devide(MIN_ZONE_SIZE);
 
     RandomStaticBush();
-    RandomDynamicBush();
+    //RandomDynamicBush();
 }
 
 VOID TermLand()
@@ -454,6 +466,14 @@ VOID UpdateBush()
     dUpdateBushTimeAvg = dUpdateBushTimeTotal / nUpdateBushCount;
 }
 
+VOID GetMouseArea(qtb::Area& area)
+{
+    area.left = (float)(cursorDownPos.X < cursorPos.X ? cursorDownPos.X : cursorPos.X);
+    area.bottom = (float)(cursorDownPos.Y < cursorPos.Y ? cursorDownPos.Y : cursorPos.Y);
+    area.right = area.left + abs(cursorDownPos.X - cursorPos.X);
+    area.top = area.bottom + abs(cursorDownPos.Y - cursorPos.Y);
+}
+
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 {
     if (!land)
@@ -507,19 +527,8 @@ VOID DrawMain(Graphics& graphics)
     if (bViewBushGroup)
         DrawBushGroup(graphics);
 
+    DrawMouseOperate(graphics);
     DrawTexts(graphics);
-    // mouse
-    /*
-    Pen penMD(Color(255, 0, 255, 0));
-    Rect rcMD(cursorDownPos.X - 3, cursorDownPos.Y - 3, 6, 6);
-    graphics.DrawEllipse(&penMD, rcMD);
-    Rect rcMM(cursorPos.X - 3, cursorPos.Y - 3, 6, 6);
-    graphics.DrawEllipse(&penMD, rcMM);
-
-    Pen penMU(Color(255, 0, 255, 255));
-    Rect rcMU(cursorUpPos.X - 3, cursorUpPos.Y - 3, 6, 6);
-    graphics.DrawEllipse(&penMU, rcMU);
-    */
 }
 
 VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
@@ -629,6 +638,19 @@ VOID DrawBushGroup(Graphics& graphics)
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
         Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
+        graphics.DrawRectangle(&pen, rc);
+    }
+}
+
+VOID DrawMouseOperate(Graphics& graphics)
+{
+    if (bMouseDown)
+    {
+        qtb::Area area;
+        GetMouseArea(area);
+
+        Pen pen(Color(192, 128, 128, 128));
+        RectF rc(area.left, area.bottom, area.width(), area.height());
         graphics.DrawRectangle(&pen, rc);
     }
 }
