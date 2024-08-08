@@ -326,7 +326,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 qtb::Area area;
                 GetMouseArea(area);
                 if(area.width() > 1 && area.height() > 1)
-                    land->createDynamicBush(area);
+                    CreateDynamicBush(area);
             }
         }
         break;
