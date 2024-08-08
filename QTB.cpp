@@ -10,6 +10,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <crtdbg.h>
 
+#include <list>
+
 #include "framework.h"
 #include "QTB.h"
 #include "base/Land.h"
@@ -24,7 +26,7 @@ using namespace Gdiplus;
 const float LAND_WIDTH              = 700.0f;
 const float LAND_HEIGHT             = 700.0f;
 const float MIN_ZONE_SIZE           = 20.0f;
-const int   STATIC_AREA_COUNT       = 300;
+const int   STATIC_AREA_COUNT       = 500;
 const int   DYNAMIC_AREA_COUNT      = 300;
 const float RAND_AREA_SIZE_MIN      = 3.0f;
 const float RAND_AREA_SIZE_MAX      = 30.0f;
@@ -37,6 +39,8 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
+
+std::list<unsigned int> bushIDList;
 
 BOOL                bLMouseDown = FALSE;
 BOOL                bRMouseDown = FALSE;
@@ -256,6 +260,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_LAND_RANDOMDYNAMICAREAS:
                 RandomDynamicBush();
                 break;
+            case ID_LAND_RANDOMREMOVEBUSH:
+                for (int i = 0; i < DYNAMIC_AREA_COUNT; ++i)
+                {
+                    size_t size = bushIDList.size();
+                    if (0 == size)
+                        break;
+
+                    std::list<unsigned int>::iterator it = bushIDList.begin();
+                    std::advance(it, rand() % size);
+                    RemoveDynamicBush(*it);
+                    bushIDList.erase(it);
+                }
+                break;
             case ID_VIEW_STATICAREAS:
                 {
                     bViewStaticAreas = !bViewStaticAreas;
@@ -472,13 +489,17 @@ VOID CreateDynamicBush(const qtb::Area& area)
     if (!land)
         return;
 
+    unsigned int bushID = -1;
+
     perfTool.Start();
-    land->createDynamicBush(area);
+    bushID = land->createDynamicBush(area);
     dCreateBushTime = perfTool.End();
 
     dCreateBushTimeTotal += dCreateBushTime;
     ++nCreateBushCount;
     dCreateBushTimeAvg = dCreateBushTimeTotal / nCreateBushCount;
+
+    bushIDList.push_back(bushID);
 }
 
 VOID RemoveDynamicBush(unsigned int bushID)
