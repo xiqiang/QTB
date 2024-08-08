@@ -24,7 +24,7 @@ namespace qtb
 		void				addBush(Bush* bush);
 		bool				overlap(const Bush& r) const;
 		void				splice(BushGroup& r);
-		bool				bushCheck(float x, float y) const;
+		bool				bushCheck(float x, float y, unsigned int* bushID = NULL) const;
 
 		const BushPList&	bushList() { return m_bushList; }
 

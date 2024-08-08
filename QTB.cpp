@@ -24,9 +24,9 @@ using namespace Gdiplus;
 const float LAND_WIDTH              = 700.0f;
 const float LAND_HEIGHT             = 700.0f;
 const float MIN_ZONE_SIZE           = 20.0f;
-const int   STATIC_AREA_COUNT       = 200;
-const int   DYNAMIC_AREA_COUNT      = 200;
-const float RAND_AREA_SIZE_MIN      = 4.0f;
+const int   STATIC_AREA_COUNT       = 300;
+const int   DYNAMIC_AREA_COUNT      = 300;
+const float RAND_AREA_SIZE_MIN      = 3.0f;
 const float RAND_AREA_SIZE_MAX      = 30.0f;
 
 // 全局变量:
@@ -38,11 +38,13 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
 
-BOOL                bMouseDown = FALSE;
+BOOL                bLMouseDown = FALSE;
+BOOL                bRMouseDown = FALSE;
 Point               cursorDownPos;
 Point               cursorUpPos;
 Point               cursorPos;
 unsigned int        cursorBushGroupID = -1;
+unsigned int        cursorBushID = -1;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
@@ -50,23 +52,27 @@ qtb::AreaMap        staticAreaMap;
 qtb::AreaMap        dynamicAreaMap;
 
 BOOL                bViewStaticAreas = TRUE;
-BOOL                bViewDynamicAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
-BOOL                bViewDynamicBush = FALSE;
+BOOL                bViewDynamicBush = TRUE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
 PerfTool            perfTool;
 
-int                 nGenerateStaticBushCount = 0;
-double              dGenerateStaticBushTime = 0;
-double              dGenerateStaticBushTimeTotal = 0;
-double              dGenerateStaticBushTimeAvg = 0;
+int                 nRebuildCount = 0;
+double              dRebuildTime = 0;
+double              dRebuildTimeTotal = 0;
+double              dRebuildTimeAvg = 0;
 
-int                 nUpdateBushCount = 0;
-double              dUpdateBushTime = 0;
-double              dUpdateBushTimeTotal = 0;
-double              dUpdateBushTimeAvg = 0;
+int                 nCreateBushCount = 0;
+double              dCreateBushTime = 0;
+double              dCreateBushTimeTotal = 0;
+double              dCreateBushTimeAvg = 0;
+
+int                 nRemoveBushCount = 0;
+double              dRemoveBushTime = 0;
+double              dRemoveBushTimeTotal = 0;
+double              dRemoveBushTimeAvg = 0;
 
 int                 nCursorCrossCount = 0;
 double              dCursorCrossTime = 0;
@@ -84,14 +90,15 @@ VOID                InitLand();
 VOID                TermLand();
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
-VOID                UpdateBush();
+VOID                CreateDynamicBush(const qtb::Area& area); 
+VOID                RemoveDynamicBush(unsigned int bushID);
+
 VOID                GetMouseArea(qtb::Area& area);
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
 VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
 VOID                DrawStaticAreas(Graphics& graphics);
-VOID                DrawDynamicAreas(Graphics& graphics);
 VOID                DrawStaticBush(Graphics& graphics);
 VOID                DrawDynamicBush(Graphics& graphics);
 VOID                DrawSelectedBushGroup(Graphics& graphics);
@@ -247,20 +254,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 RandomStaticBush();
                 break;
             case ID_LAND_RANDOMDYNAMICAREAS:
-                //RandomDynamicBush();
+                RandomDynamicBush();
                 break;
             case ID_VIEW_STATICAREAS:
                 {
                     bViewStaticAreas = !bViewStaticAreas;
                     UINT check = bViewStaticAreas ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_STATICAREAS, MF_BYCOMMAND | check);
-                }
-                break;
-            case ID_VIEW_DYNAMICAREAS:
-                {
-                    bViewDynamicAreas = !bViewDynamicAreas;
-                    UINT check = bViewDynamicAreas ? MF_CHECKED : MF_UNCHECKED;
-                    CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICAREAS, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_STATICBUSH:
@@ -312,38 +312,58 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             cursorDownPos.X = GET_X_LPARAM(lParam);
             cursorDownPos.Y = GET_Y_LPARAM(lParam);
-            bMouseDown = TRUE;
+            bLMouseDown = TRUE;
         }
         break;
     case WM_LBUTTONUP:
         {
             cursorUpPos.X = GET_X_LPARAM(lParam);
             cursorUpPos.Y = GET_Y_LPARAM(lParam);
-            bMouseDown = FALSE;
+            bLMouseDown = FALSE;
 
             if (land)
             {
                 qtb::Area area;
                 GetMouseArea(area);
-                land->createDynamicBush(area);
+                if(area.width() > 1 && area.height() > 1)
+                    land->createDynamicBush(area);
             }
         }
         break;
+    case WM_RBUTTONDOWN:
+        {
+            bRMouseDown = TRUE;
+
+            if (cursorBushID != -1)
+                RemoveDynamicBush(cursorBushID);
+        }
+        break;
+    case WM_RBUTTONUP:
+    {
+        bRMouseDown = FALSE;
+    }
+    break;
     case WM_MOUSEMOVE:
         {
             cursorPos.X = GET_X_LPARAM(lParam);
             cursorPos.Y = GET_Y_LPARAM(lParam);
 
-            if (land)
-            {
-                perfTool.Start();
-                cursorBushGroupID = land->crossBushGroupID((float)cursorPos.X, (float)cursorPos.Y);
-                dCursorCrossTime = perfTool.End();
+            if (!land)
+                break;
 
-                dCursorCrossTimeTotal += dCursorCrossTime;
-                ++nCursorCrossCount;
-                dCursorCrossTimeAvg = dCursorCrossTimeTotal / nCursorCrossCount;
-            }
+            cursorBushGroupID = -1;
+            cursorBushID = -1;
+
+            perfTool.Start();
+            land->bushCross((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
+            dCursorCrossTime = perfTool.End();
+
+            dCursorCrossTimeTotal += dCursorCrossTime;
+            ++nCursorCrossCount;
+            dCursorCrossTimeAvg = dCursorCrossTimeTotal / nCursorCrossCount;
+
+            if (bRMouseDown && cursorBushID != -1)
+                RemoveDynamicBush(cursorBushID);
         }
         break;
     default:
@@ -421,14 +441,12 @@ VOID RandomStaticBush()
     }
 
     perfTool.Start();
-    land->resetStaticBush(staticAreaMap);
-    dGenerateStaticBushTime = perfTool.End();
+    land->rebuild(staticAreaMap);
+    dRebuildTime = perfTool.End();
 
-    dGenerateStaticBushTimeTotal += dGenerateStaticBushTime;
-    ++nGenerateStaticBushCount;
-    dGenerateStaticBushTimeAvg = dGenerateStaticBushTimeTotal / nGenerateStaticBushCount;
-
-    UpdateBush();
+    dRebuildTimeTotal += dRebuildTime;
+    ++nRebuildCount;
+    dRebuildTimeAvg = dRebuildTimeTotal / nRebuildCount;
 }
 
 VOID RandomDynamicBush()
@@ -445,25 +463,38 @@ VOID RandomDynamicBush()
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        dynamicAreaMap[land->AllocAreaID()] = (qtb::Area(x - w, x + w, y - h, y + h));
+        CreateDynamicBush(qtb::Area(x - w, x + w, y - h, y + h));
     }
-
-    land->setDynamicAreas(dynamicAreaMap);
-    UpdateBush();
 }
 
-VOID UpdateBush()
+VOID CreateDynamicBush(const qtb::Area& area)
 {
     if (!land)
         return;
 
     perfTool.Start();
-    land->updateBushGroup();
-    dUpdateBushTime = perfTool.End();
+    land->createDynamicBush(area);
+    dCreateBushTime = perfTool.End();
 
-    dUpdateBushTimeTotal += dUpdateBushTime;
-    ++nUpdateBushCount;
-    dUpdateBushTimeAvg = dUpdateBushTimeTotal / nUpdateBushCount;
+    dCreateBushTimeTotal += dCreateBushTime;
+    ++nCreateBushCount;
+    dCreateBushTimeAvg = dCreateBushTimeTotal / nCreateBushCount;
+}
+
+VOID RemoveDynamicBush(unsigned int bushID)
+{
+    if (!land)
+        return;
+
+    perfTool.Start();
+    land->removeDynamicBush(bushID);
+    dRemoveBushTime = perfTool.End();
+
+    dRemoveBushTimeTotal += dRemoveBushTime;
+    ++nRemoveBushCount;
+    dRemoveBushTimeAvg = dRemoveBushTimeTotal / nRemoveBushCount;
+
+    cursorBushID = -1;
 }
 
 VOID GetMouseArea(qtb::Area& area)
@@ -516,8 +547,6 @@ VOID DrawMain(Graphics& graphics)
 
     if(bViewStaticAreas)
         DrawStaticAreas(graphics);
-    if (bViewDynamicAreas)
-        DrawDynamicAreas(graphics);
     if (bViewStaticBush)
         DrawStaticBush(graphics);
     if (bViewDynamicBush)
@@ -600,8 +629,11 @@ VOID DrawDynamicBush(Graphics& graphics)
         const qtb::Area& area = bush->overall();
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
-        Pen pen(drawData.GetBushRes(bush->id()).color);
-        graphics.DrawRectangle(&pen, rc);
+        SolidBrush brush(Color(128, 0, 192, 128));
+        graphics.FillRectangle(&brush, rc);
+
+        //Pen pen(drawData.GetBushRes(bush->id()).color);
+        //graphics.DrawRectangle(&pen, rc);
     }
 }
 
@@ -644,7 +676,7 @@ VOID DrawBushGroup(Graphics& graphics)
 
 VOID DrawMouseOperate(Graphics& graphics)
 {
-    if (bMouseDown)
+    if (bLMouseDown)
     {
         qtb::Area area;
         GetMouseArea(area);
@@ -672,20 +704,29 @@ VOID DrawTexts(Graphics& graphics)
 
     // generate static bush
     PointF origin(area.right + MIN_ZONE_SIZE, 0.0f);
-    _sntprintf_s(string, 64, _T("GenerateStaticBushTime: %f"), dGenerateStaticBushTime);
+    _sntprintf_s(string, 64, _T("RebuildTime: %f"), dRebuildTime);
     graphics.DrawString( string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("GenerateStaticBushTimeAvg: %f"), dGenerateStaticBushTimeAvg);
+    _sntprintf_s(string, 64, _T("RebuildTimeAvg: %f"), dRebuildTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
-    // update bush
+    // create dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("UpdateBushTime: %f"), dUpdateBushTime);
+    _sntprintf_s(string, 64, _T("CreateBushTime: %f"), dCreateBushTime);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("UpdateBushTimeAvg: %f"), dUpdateBushTimeAvg);
+    _sntprintf_s(string, 64, _T("CreateBushTimeAvg: %f"), dCreateBushTimeAvg);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+
+    // remove dynamic bush
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("RemoveBushTime: %f"), dRemoveBushTime);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("RemoveBushTimeAvg: %f"), dRemoveBushTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // cursor cross
@@ -696,4 +737,14 @@ VOID DrawTexts(Graphics& graphics)
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("CursorCrossTimeAvg: %f"), dCursorCrossTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("PointBushGroup: %d"), cursorBushGroupID);
+    SolidBrush bushGroupBrush(drawData.GetBushGroupRes(cursorBushGroupID).color);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("PointBush: %d"), cursorBushID);
+    SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
 }

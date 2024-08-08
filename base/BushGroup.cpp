@@ -53,10 +53,15 @@ namespace qtb
 		m_overall.right = m_overall.right > area.right ? m_overall.right : area.right;
 		m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
 		m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
+
+		for (BushPList::iterator it = r.m_bushList.begin(); it != r.m_bushList.end(); ++it)
+			(*it)->m_group = this;
+
 		m_bushList.splice(m_bushList.end(), r.m_bushList);
+		r.m_bushList.clear();
 	}
 
-	bool BushGroup::bushCheck(float x, float y) const
+	bool BushGroup::bushCheck(float x, float y, unsigned int* bushID /*= NULL*/) const
 	{
 		if (!m_overall.contains(x, y))
 			return false;
@@ -65,7 +70,11 @@ namespace qtb
 			const Bush* bush = *it;
 			assert(bush);
 			if (bush->cross(x, y))
+			{
+				if (bushID)
+					*bushID = bush->id();
 				return true;
+			}
 		}
 		return false;
 	}

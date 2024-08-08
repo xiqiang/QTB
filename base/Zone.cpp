@@ -17,20 +17,19 @@ namespace qtb
 		return new Zone(area, this);
 	}
 
-	unsigned int Zone::crossBushGroupID(float x, float y)
+	bool Zone::bushCross(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
 	{
 		if (!m_area.contains(x, y))
-			return -1;
+			return false;
 
-		unsigned int bushID = -1;
-		if(bushCross(x, y, &bushID))
-			return bushID;
+		if(_bushCross(x, y, bushGroupID, bushID))
+			return true;
 
 		Zone* child = dynamic_cast<Zone*>(getChild(x, y));
 		if (child)
-			return child->crossBushGroupID(x, y);
+			return child->bushCross(x, y, bushGroupID, bushID);
 
-		return -1;
+		return false;
 	}
 
 	void Zone::addResideBushGroup(BushGroup* group)
@@ -43,13 +42,6 @@ namespace qtb
 		m_resideBushGroupMap[group->id()] = group;
 	}
 
-	void Zone::removeResideBushGroup(BushGroup* group)
-	{
-		assert(group->m_zone == this);
-		group->m_zone = NULL;
-		m_resideBushGroupMap.erase(group->id());
-	}
-
 	void Zone::removeResideBushGroup(unsigned int groupID)
 	{
 		BushGroupPMap::iterator it = m_resideBushGroupMap.find(groupID);
@@ -58,7 +50,7 @@ namespace qtb
 		m_resideBushGroupMap.erase(groupID);
 	}
 
-	bool Zone::bushCross(float x, float y, unsigned int* bushID /*= NULL*/) const
+	bool Zone::_bushCross(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/) const
 	{
 		if (!m_area.contains(x, y))
 			return false;
@@ -67,9 +59,9 @@ namespace qtb
 			BushGroup* group = it->second;
 			assert(group);
 
-			if (group->bushCheck(x, y)) {
-				if (bushID)
-					*bushID = group->id();
+			if (group->bushCheck(x, y, bushID)) {
+				if (bushGroupID)
+					*bushGroupID = group->id();
 				return true;
 			}
 		}

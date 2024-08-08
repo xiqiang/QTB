@@ -35,7 +35,9 @@ namespace qtb
 		m_overall.right = m_overall.right > area.right ? m_overall.right : area.right;
 		m_overall.bottom = m_overall.bottom < area.bottom ? m_overall.bottom : area.bottom;
 		m_overall.top = m_overall.top > area.top ? m_overall.top : area.top;
+
 		m_areaList.splice(m_areaList.end(), r.m_areaList);
+		r.m_areaList.clear();
 	}
 
 	bool Bush::overlap(const Bush& r) const
