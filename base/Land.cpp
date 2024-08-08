@@ -45,11 +45,11 @@ namespace qtb
 		return bush->id();
 	}
 
-	void Land::removeDynamicBush(unsigned int id)
+	bool Land::removeDynamicBush(unsigned int id)
 	{
 		BushPMap::iterator itFind = m_dynamicBushMap.find(id);
 		if (m_dynamicBushMap.end() == itFind)
-			return;
+			return false;
 
 		Bush* bushFind = itFind->second;
 		assert(bushFind);
@@ -71,6 +71,8 @@ namespace qtb
 		delete bushFind;
 		m_bushGroupMap.erase(group->id());
 		delete group;
+
+		return true;
 	}
 
 	void Land::generateBushMap(const AreaMap& areaMap, BushPMap& bushMap)

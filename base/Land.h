@@ -28,7 +28,7 @@ namespace qtb
 
 		void					rebuild(const AreaMap& areaMap);
 		unsigned int			createDynamicBush(const Area& area);
-		void					removeDynamicBush(unsigned int id);
+		bool					removeDynamicBush(unsigned int id);
 
 		const BushPMap&			getStaticBush() const { return m_staticBushMap; }
 		const BushPMap&			getDynamicBush() const { return m_dynamicBushMap; }

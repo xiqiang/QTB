@@ -486,15 +486,18 @@ VOID RemoveDynamicBush(unsigned int bushID)
     if (!land)
         return;
 
+    bool removed = false;
+
     perfTool.Start();
-    land->removeDynamicBush(bushID);
+    removed = land->removeDynamicBush(bushID);
     dRemoveBushTime = perfTool.End();
 
     dRemoveBushTimeTotal += dRemoveBushTime;
     ++nRemoveBushCount;
     dRemoveBushTimeAvg = dRemoveBushTimeTotal / nRemoveBushCount;
 
-    cursorBushID = -1;
+    if(removed)
+        cursorBushID = -1;
 }
 
 VOID GetMouseArea(qtb::Area& area)
@@ -738,7 +741,7 @@ VOID DrawTexts(Graphics& graphics)
     _sntprintf_s(string, 64, _T("CursorCrossTimeAvg: %f"), dCursorCrossTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
-    origin = origin + PointF(0.0f, 20.0f);
+    origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("PointBushGroup: %d"), cursorBushGroupID);
     SolidBrush bushGroupBrush(drawData.GetBushGroupRes(cursorBushGroupID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
