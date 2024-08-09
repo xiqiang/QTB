@@ -35,17 +35,22 @@ namespace qtb
 		}
 	}
 
-	unsigned int Land::createDynamicBush(const Area& area)
+	unsigned int Land::createDynamicBush(const Area& area, Area* influence /*= NULL*/)
 	{
 		Bush* bush = new Bush(this);
 		bush->addArea(area);
 		m_dynamicBushMap[bush->id()] = bush;
 
-		resideBush(bush);
+		BushGroup* group = resideBush(bush);
+		assert(group);
+
+		if (influence)
+			*influence = group->overall();
+
 		return bush->id();
 	}
 
-	bool Land::removeDynamicBush(unsigned int id)
+	bool Land::removeDynamicBush(unsigned int id, Area* influence /*= NULL*/)
 	{
 		BushPMap::iterator itFind = m_dynamicBushMap.find(id);
 		if (m_dynamicBushMap.end() == itFind)
@@ -53,9 +58,11 @@ namespace qtb
 
 		Bush* bush = itFind->second;
 		assert(bush);
-
 		BushGroup* group = bush->group();
 		assert(group);
+
+		if (influence)
+			*influence = group->overall();
 
 		assert(group->zone());
 		group->zone()->removeResideBushGroup(group->id());
@@ -151,7 +158,7 @@ namespace qtb
 		delete group;
 	}
 
-	void Land::resideBush(Bush* bush)
+	BushGroup* Land::resideBush(Bush* bush)
 	{
 		assert(bush);
 
@@ -178,6 +185,7 @@ namespace qtb
 			m_bushGroupMap[group->id()] = group;
 			group->addBush(bush);
 			resideBushGroup(group);
+			return group;
 		}
 		else
 		{
@@ -200,6 +208,7 @@ namespace qtb
 			}
 
 			resideBushGroup(group);
+			return group;
 		}
 	}
 
