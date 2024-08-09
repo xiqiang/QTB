@@ -15,8 +15,10 @@
 #include "framework.h"
 #include "QTB.h"
 #include "base/Land.h"
+#include "editor/Util.h"
 #include "editor/DrawData.h"
 #include "editor/PerfTool.h"
+#include "editor/Robot.h"
 
 #pragma comment (lib,"Gdiplus.lib")
 using namespace Gdiplus;
@@ -30,6 +32,7 @@ const int   STATIC_AREA_COUNT       = 500;
 const int   DYNAMIC_AREA_COUNT      = 300;
 const float RAND_AREA_SIZE_MIN      = 3.0f;
 const float RAND_AREA_SIZE_MAX      = 30.0f;
+const int   ROBOT_COUNT             = 200;
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -40,6 +43,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
 
+std::list<Robot>        robotList;
 std::list<unsigned int> bushIDList;
 
 BOOL                bLMouseDown = FALSE;
@@ -58,6 +62,7 @@ qtb::AreaMap        dynamicAreaMap;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
+BOOL                bViewRobot = FALSE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
@@ -78,10 +83,10 @@ double              dRemoveBushTime = 0;
 double              dRemoveBushTimeTotal = 0;
 double              dRemoveBushTimeAvg = 0;
 
-int                 nCursorCrossCount = 0;
-double              dCursorCrossTime = 0;
-double              dCursorCrossTimeTotal = 0;
-double              dCursorCrossTimeAvg = 0;
+int                 nBushCrossCount = 0;
+double              dBushCrossTime = 0;
+double              dBushCrossTimeTotal = 0;
+double              dBushCrossTimeAvg = 0;
 
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -92,6 +97,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 VOID                InitLand();
 VOID                TermLand();
+VOID                InitRobot();
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
 VOID                CreateDynamicBush(const qtb::Area& area); 
@@ -105,6 +111,7 @@ VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
 VOID                DrawStaticAreas(Graphics& graphics);
 VOID                DrawStaticBush(Graphics& graphics);
 VOID                DrawDynamicBush(Graphics& graphics);
+VOID                DrawRobot(Graphics& graphics);
 VOID                DrawSelectedBushGroup(Graphics& graphics);
 VOID                DrawBushGroup(Graphics& graphics);
 VOID                DrawMouseOperate(Graphics& graphics);
@@ -155,6 +162,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
+            if (land)
+            {
+                for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+                {
+                    it->Tick(GetTickCount() / 1000.0f);
+                    unsigned int bushGroupID = -1;
+
+                    perfTool.Start();
+                    land->bushCross(it->x(), it->y(), &bushGroupID);
+                    dBushCrossTime = perfTool.End();
+
+                    dBushCrossTimeTotal += dBushCrossTime;
+                    ++nBushCrossCount;
+                    dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+
+                    it->setBushGroupID(bushGroupID);
+                }
+            }
+
             InvalidateRect(hWndMain, NULL, FALSE);
         }
     }
@@ -219,6 +245,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWndMain);
 
    InitLand();
+   InitRobot();
 
    return TRUE;
 }
@@ -292,6 +319,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     bViewDynamicBush = !bViewDynamicBush;
                     UINT check = bViewDynamicBush ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICBUSH, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_VIEW_ROBOT:
+                {
+                    bViewRobot = !bViewRobot;
+                    UINT check = bViewRobot ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_ROBOT, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_SELECTEDBUSHGROUP:
@@ -373,11 +407,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             perfTool.Start();
             land->bushCross((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
-            dCursorCrossTime = perfTool.End();
+            dBushCrossTime = perfTool.End();
 
-            dCursorCrossTimeTotal += dCursorCrossTime;
-            ++nCursorCrossCount;
-            dCursorCrossTimeAvg = dCursorCrossTimeTotal / nCursorCrossCount;
+            dBushCrossTimeTotal += dBushCrossTime;
+            ++nBushCrossCount;
+            dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
 
             if (bRMouseDown && cursorBushID != -1)
                 RemoveDynamicBush(cursorBushID);
@@ -409,16 +443,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-int RangeRand(int min, int max)
-{
-    return rand() % (max - min) + min;
-}
-
-float RangeRand(float min, float max)
-{
-    return rand() / (float)RAND_MAX * (max - min) + min;
-}
-
 VOID InitLand()
 {
     srand((unsigned int)time(NULL));
@@ -437,6 +461,18 @@ VOID TermLand()
     {
         delete land;
         land = NULL;
+    }
+}
+
+VOID InitRobot()
+{
+    for (INT i = 0; i < ROBOT_COUNT; ++i)
+        robotList.push_back(Robot());
+
+    if (land)
+    {
+        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+            it->Init(land->area());
     }
 }
 
@@ -575,6 +611,8 @@ VOID DrawMain(Graphics& graphics)
         DrawStaticBush(graphics);
     if (bViewDynamicBush)
         DrawDynamicBush(graphics);
+    if (bViewRobot)
+        DrawRobot(graphics);
     if (bViewSelectedBushGroup)
         DrawSelectedBushGroup(graphics);
     if (bViewBushGroup)
@@ -661,6 +699,21 @@ VOID DrawDynamicBush(Graphics& graphics)
     }
 }
 
+VOID DrawRobot(Graphics& graphics)
+{
+    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    {
+        Pen pen(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
+        RectF rc(it->x(), it->y(), 5.0f, 5.0f);
+        if (it->getBrushGroupID() != -1)
+        {
+            SolidBrush brush(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
+            graphics.FillEllipse(&brush, rc);
+        }
+        graphics.DrawEllipse(&pen, rc);
+    }
+}
+
 VOID DrawSelectedBushGroup(Graphics& graphics)
 {
     if (!land)
@@ -674,7 +727,8 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     if (bushGroupMap.end() == it)
         return;
 
-    const Color& color = drawData.GetBushGroupRes(it->second->id()).color;
+    //const Color& color = drawData.GetBushGroupRes(it->second->id()).color;
+    const Color& color = drawData.GetZoneGenerationRes(it->second->zone()->generation()).color;
     SolidBrush solidBrush(Color(128, color.GetR(), color.GetG(), color.GetB()));
     const qtb::Area& area = it->second->overall();
     RectF rc(area.left, area.bottom, area.width(), area.height());
@@ -693,7 +747,8 @@ VOID DrawBushGroup(Graphics& graphics)
         const qtb::Area& area = bushGroup->overall();
         RectF rc(area.left, area.bottom, area.width(), area.height());
 
-        Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
+        //Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
+        Pen pen(drawData.GetBushGroupRes(it->second->id()).color);
         graphics.DrawRectangle(&pen, rc);
     }
 }
@@ -755,11 +810,11 @@ VOID DrawTexts(Graphics& graphics)
 
     // cursor cross
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("CursorCrossTime: %f"), dCursorCrossTime);
+    _sntprintf_s(string, 64, _T("BushCrossTime: %f"), dBushCrossTime);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("CursorCrossTimeAvg: %f"), dCursorCrossTimeAvg);
+    _sntprintf_s(string, 64, _T("BushCrossTimeAvg: %f"), dBushCrossTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 30.0f);

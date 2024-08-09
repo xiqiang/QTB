@@ -57,6 +57,12 @@
     <ClInclude Include="editor\PerfTool.h">
       <Filter>editor</Filter>
     </ClInclude>
+    <ClInclude Include="editor\Robot.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\Util.h">
+      <Filter>editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QTB.cpp">

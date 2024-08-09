@@ -148,6 +148,8 @@
     <ClInclude Include="base\Zone.h" />
     <ClInclude Include="editor\DrawData.h" />
     <ClInclude Include="editor\PerfTool.h" />
+    <ClInclude Include="editor\Robot.h" />
+    <ClInclude Include="editor\Util.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="QTB.h" />
     <ClInclude Include="Resource.h" />

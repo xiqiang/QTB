@@ -38,6 +38,25 @@ public:
 	typedef std::map<unsigned int, ZoneGenerationRes> ZoneGenerationResMap;
 
 public:
+	DrawData() {
+		BushRes br;
+		br.color = Color(255, 0, 0, 0);
+		m_bushResMap[-1] = br;
+
+		BushGroupRes bgr;
+		bgr.color = Color(255, 0, 0, 0);
+		m_bushGroupResMap[-1] = bgr;
+
+		ZoneRes zr;
+		zr.color = Color(255, 0, 0, 0);
+		m_zoneResMap[NULL] = zr;
+
+		ZoneGenerationRes zgr;
+		zgr.color = Color(255, 0, 0, 0);
+		m_zoneGenerationResMap[-1] = zgr;
+	}
+
+public:
 	const BushRes& GetBushRes(unsigned int id) {
 		BushResMap::iterator it = m_bushResMap.find(id);
 		if (it != m_bushResMap.end())
