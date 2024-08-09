@@ -32,7 +32,7 @@ const int   STATIC_AREA_COUNT       = 500;
 const int   DYNAMIC_AREA_COUNT      = 300;
 const float RAND_AREA_SIZE_MIN      = 3.0f;
 const float RAND_AREA_SIZE_MAX      = 30.0f;
-const int   ROBOT_COUNT             = 200;
+const int   ROBOT_COUNT             = 500;
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -59,10 +59,11 @@ qtb::Land*          land = NULL;
 qtb::AreaMap        staticAreaMap;
 qtb::AreaMap        dynamicAreaMap;
 
+BOOL                bViewQTree = FALSE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
-BOOL                bViewRobot = FALSE;
+BOOL                bViewRobot = TRUE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
@@ -103,6 +104,7 @@ VOID                RandomDynamicBush();
 VOID                CreateDynamicBush(const qtb::Area& area); 
 VOID                RemoveDynamicBush(unsigned int bushID);
 
+VOID                OnUpdate();
 VOID                GetMouseArea(qtb::Area& area);
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
@@ -162,25 +164,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            if (land)
-            {
-                for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
-                {
-                    it->Tick(GetTickCount() / 1000.0f);
-                    unsigned int bushGroupID = -1;
-
-                    perfTool.Start();
-                    land->bushCross(it->x(), it->y(), &bushGroupID);
-                    dBushCrossTime = perfTool.End();
-
-                    dBushCrossTimeTotal += dBushCrossTime;
-                    ++nBushCrossCount;
-                    dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
-
-                    it->setBushGroupID(bushGroupID);
-                }
-            }
-
+            OnUpdate();
             InvalidateRect(hWndMain, NULL, FALSE);
         }
     }
@@ -298,6 +282,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     std::advance(it, rand() % size);
                     RemoveDynamicBush(*it);
                     bushIDList.erase(it);
+                }
+                break;
+            case ID_VIEW_QTREE:
+                {
+                    bViewQTree = !bViewQTree;
+                    UINT check = bViewQTree ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_QTREE, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_STATICAREAS:
@@ -452,7 +443,7 @@ VOID InitLand()
     land->devide(MIN_ZONE_SIZE);
 
     RandomStaticBush();
-    //RandomDynamicBush();
+    RandomDynamicBush();
 }
 
 VOID TermLand()
@@ -538,6 +529,31 @@ VOID CreateDynamicBush(const qtb::Area& area)
     bushIDList.push_back(bushID);
 }
 
+VOID OnUpdate()
+{
+    if (!land)
+        return;
+
+    if (bViewRobot)
+    {
+        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+        {
+            it->Tick(GetTickCount() / 1000.0f);
+            unsigned int bushGroupID = -1;
+
+            perfTool.Start();
+            land->bushCross(it->x(), it->y(), &bushGroupID);
+            dBushCrossTime = perfTool.End();
+
+            dBushCrossTimeTotal += dBushCrossTime;
+            ++nBushCrossCount;
+            dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+
+            it->setBushGroupID(bushGroupID);
+        }
+    }
+}
+
 VOID RemoveDynamicBush(unsigned int bushID)
 {
     if (!land)
@@ -603,8 +619,8 @@ VOID DrawMain(Graphics& graphics)
     if (!land)
         return;
 
-    DrawQTree(graphics, land);
-
+    if(bViewQTree)
+        DrawQTree(graphics, land);
     if(bViewStaticAreas)
         DrawStaticAreas(graphics);
     if (bViewStaticBush)
