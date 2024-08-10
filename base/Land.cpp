@@ -14,6 +14,11 @@ namespace qtb
 
 	Land::~Land()
 	{
+		clear();
+	}
+
+	void Land::clear()
+	{
 		clearBushMap(m_staticBushMap);
 		clearBushMap(m_dynamicBushMap);
 		clearBushGroup();
@@ -21,9 +26,7 @@ namespace qtb
 
 	void Land::rebuild(const AreaMap& areaMap)
 	{
-		clearBushMap(m_staticBushMap);
-		clearBushMap(m_dynamicBushMap);
-		clearBushGroup();
+		clear();
 
 		generateBushMap(areaMap, m_staticBushMap);
 		for (BushPMap::iterator itBush = m_staticBushMap.begin(); itBush != m_staticBushMap.end(); ++itBush)

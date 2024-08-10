@@ -26,6 +26,7 @@ namespace qtb
 			return m_nextAreaID++;
 		}
 
+		void					clear();
 		void					rebuild(const AreaMap& areaMap);
 		unsigned int			createDynamicBush(const Area& area, Area* influence = NULL);
 		bool					removeDynamicBush(unsigned int id, Area* influence = NULL);

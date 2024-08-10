@@ -57,13 +57,12 @@ unsigned int        cursorBushID = -1;
 DrawData            drawData;
 qtb::Land*          land = NULL;
 qtb::AreaMap        staticAreaMap;
-qtb::AreaMap        dynamicAreaMap;
 
 BOOL                bViewQTree = FALSE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
-BOOL                bViewRobot = TRUE;
+BOOL                bViewRobot = FALSE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
@@ -265,6 +264,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            case ID_LAND_CLEAR:
+                if (land)
+                    land->clear();
+                staticAreaMap.clear();
+                break;
             case IDM_LAND_RANDOMSTATICBUSH:
                 RandomStaticBush();
                 break;
@@ -442,8 +446,8 @@ VOID InitLand()
     land = new qtb::Land(area);
     land->devide(MIN_ZONE_SIZE);
 
-    RandomStaticBush();
-    RandomDynamicBush();
+    //RandomStaticBush();
+    //RandomDynamicBush();
 }
 
 VOID TermLand()
@@ -497,8 +501,6 @@ VOID RandomDynamicBush()
 {
     if (!land)
         return;
-
-    dynamicAreaMap.clear();
 
     for (int i = 0; i < DYNAMIC_AREA_COUNT; ++i)
     {
@@ -662,16 +664,6 @@ VOID DrawStaticAreas(Graphics& graphics)
 {
     SolidBrush brush(Color(128, 128, 192, 0));
     for (qtb::AreaMap::const_iterator it = staticAreaMap.begin(); it != staticAreaMap.end(); ++it)
-    {
-        RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
-        graphics.FillRectangle(&brush, rc);
-    }
-}
-
-VOID DrawDynamicAreas(Graphics& graphics)
-{
-    SolidBrush brush(Color(128, 0, 192, 128));
-    for (qtb::AreaMap::const_iterator it = dynamicAreaMap.begin(); it != dynamicAreaMap.end(); ++it)
     {
         RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
         graphics.FillRectangle(&brush, rc);
