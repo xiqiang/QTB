@@ -28,10 +28,10 @@ using namespace Gdiplus;
 const float LAND_WIDTH              = 700.0f;
 const float LAND_HEIGHT             = 700.0f;
 const float MIN_ZONE_SIZE           = 20.0f;
-const int   STATIC_AREA_COUNT       = 500;
-const int   DYNAMIC_AREA_COUNT      = 300;
+const int   STATIC_AREA_COUNT       = 1000;
+const int   DYNAMIC_AREA_COUNT      = 500;
 const float RAND_AREA_SIZE_MIN      = 3.0f;
-const float RAND_AREA_SIZE_MAX      = 30.0f;
+const float RAND_AREA_SIZE_MAX      = 15.0f;
 const int   ROBOT_COUNT             = 500;
 
 // 全局变量:
@@ -720,7 +720,7 @@ VOID DrawRobot(Graphics& graphics)
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
         Pen pen(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
-        RectF rc(it->x(), it->y(), 5.0f, 5.0f);
+        RectF rc(it->x()-2.5f, it->y()-2.5f, 5.0f, 5.0f);
         if (it->getBrushGroupID() != -1)
         {
             SolidBrush brush(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
