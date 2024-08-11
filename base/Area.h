@@ -46,14 +46,13 @@ namespace qtb
 				&& y >= bottom && y <= top;
 		}
 
-		float left;
-		float right;
-		float bottom;
-		float top;
+		float	left;
+		float	right;
+		float	bottom;
+		float	top;
 	};
 
-	typedef std::list<Area>					AreaList;
-	typedef std::map<unsigned int, Area>	AreaMap;
+	typedef std::list<Area>		AreaList;
 
 }
 

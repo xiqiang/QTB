@@ -17,49 +17,49 @@ namespace qtb
 		return new Zone(area, this);
 	}
 
-	bool Zone::bushCross(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
+	bool Zone::bushContains(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
 	{
 		if (!m_area.contains(x, y))
 			return false;
 
-		if(_bushCross(x, y, bushGroupID, bushID))
+		if(_bushContains(x, y, bushGroupID, bushID))
 			return true;
 
-		Zone* child = dynamic_cast<Zone*>(getChild(x, y));
-		if (child)
-			return child->bushCross(x, y, bushGroupID, bushID);
+		Zone* c = dynamic_cast<Zone*>(child(x, y));
+		if (c)
+			return c->bushContains(x, y, bushGroupID, bushID);
 
 		return false;
 	}
 
-	void Zone::addResideBushGroup(BushGroup* group)
+	void Zone::addBushGroup(BushGroup* group)
 	{
 		assert(group);
 		assert(NULL == group->m_zone);
 
 		group->m_zone = this;
-		assert(m_resideBushGroupMap.find(group->id()) == m_resideBushGroupMap.end());
-		m_resideBushGroupMap[group->id()] = group;
+		assert(m_bushGroups.find(group->id()) == m_bushGroups.end());
+		m_bushGroups[group->id()] = group;
 	}
 
-	void Zone::removeResideBushGroup(unsigned int groupID)
+	void Zone::removeBushGroup(unsigned int groupID)
 	{
-		BushGroupPMap::iterator it = m_resideBushGroupMap.find(groupID);
-		assert(it != m_resideBushGroupMap.end());
+		BushGroupPMap::iterator it = m_bushGroups.find(groupID);
+		assert(it != m_bushGroups.end());
 		it->second->m_zone = NULL;
-		m_resideBushGroupMap.erase(groupID);
+		m_bushGroups.erase(groupID);
 	}
 
-	bool Zone::_bushCross(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/) const
+	bool Zone::_bushContains(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/) const
 	{
 		if (!m_area.contains(x, y))
 			return false;
 
-		for (BushGroupPMap::const_iterator it = m_resideBushGroupMap.begin(); it != m_resideBushGroupMap.end(); ++it) {
+		for (BushGroupPMap::const_iterator it = m_bushGroups.begin(); it != m_bushGroups.end(); ++it) {
 			BushGroup* group = it->second;
 			assert(group);
 
-			if (group->bushCheck(x, y, bushID)) {
+			if (group->contains(x, y, bushID)) {
 				if (bushGroupID)
 					*bushGroupID = group->id();
 				return true;

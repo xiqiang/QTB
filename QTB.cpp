@@ -56,7 +56,7 @@ unsigned int        cursorBushID = -1;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
-qtb::AreaMap        staticAreaMap;
+qtb::AreaList       staticAreas;
 
 BOOL                bViewQTree = FALSE;
 BOOL                bViewStaticAreas = TRUE;
@@ -267,7 +267,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_LAND_CLEAR:
                 if (land)
                     land->clear();
-                staticAreaMap.clear();
+                staticAreas.clear();
                 break;
             case IDM_LAND_RANDOMSTATICBUSH:
                 RandomStaticBush();
@@ -401,7 +401,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             cursorBushID = -1;
 
             perfTool.Start();
-            land->bushCross((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
+            land->bushContains((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
             dBushCrossTime = perfTool.End();
 
             dBushCrossTimeTotal += dBushCrossTime;
@@ -476,7 +476,7 @@ VOID RandomStaticBush()
     if (!land)
         return;
 
-    staticAreaMap.clear();
+    staticAreas.clear();
 
     for (int i = 0; i < STATIC_AREA_COUNT; ++i)
     {
@@ -485,11 +485,11 @@ VOID RandomStaticBush()
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        staticAreaMap[land->AllocAreaID()]=(qtb::Area(x - w, x + w, y - h, y + h));
+        staticAreas.push_back(qtb::Area(x - w, x + w, y - h, y + h));
     }
 
     perfTool.Start();
-    land->rebuild(staticAreaMap);
+    land->rebuild(staticAreas);
     dRebuildTime = perfTool.End();
 
     dRebuildTimeTotal += dRebuildTime;
@@ -521,7 +521,7 @@ VOID CreateDynamicBush(const qtb::Area& area)
     unsigned int bushID = -1;
 
     perfTool.Start();
-    bushID = land->createDynamicBush(area);
+    bushID = land->createBush(area);
     dCreateBushTime = perfTool.End();
 
     dCreateBushTimeTotal += dCreateBushTime;
@@ -544,7 +544,7 @@ VOID OnUpdate()
             unsigned int bushGroupID = -1;
 
             perfTool.Start();
-            land->bushCross(it->x(), it->y(), &bushGroupID);
+            land->bushContains(it->x(), it->y(), &bushGroupID);
             dBushCrossTime = perfTool.End();
 
             dBushCrossTimeTotal += dBushCrossTime;
@@ -564,7 +564,7 @@ VOID RemoveDynamicBush(unsigned int bushID)
     bool removed = false;
 
     perfTool.Start();
-    removed = land->removeDynamicBush(bushID);
+    removed = land->removeBush(bushID);
     dRemoveBushTime = perfTool.End();
 
     dRemoveBushTimeTotal += dRemoveBushTime;
@@ -654,18 +654,18 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 
     for (int i = 0; i < qtb::QTree::CHILD_COUNT; ++i)
     {
-        qtb::QTree* child = tree->getChild(i);
-        if (child)
-            DrawQTree(graphics, child);
+        qtb::QTree* c = tree->child(i);
+        if (c)
+            DrawQTree(graphics, c);
     }
 }
 
 VOID DrawStaticAreas(Graphics& graphics)
 {
     SolidBrush brush(Color(128, 128, 192, 0));
-    for (qtb::AreaMap::const_iterator it = staticAreaMap.begin(); it != staticAreaMap.end(); ++it)
+    for (qtb::AreaList::const_iterator it = staticAreas.begin(); it != staticAreas.end(); ++it)
     {
-        RectF rc(it->second.left, it->second.bottom, it->second.width(), it->second.height());
+        RectF rc(it->left, it->bottom, it->width(), it->height());
         graphics.FillRectangle(&brush, rc);
     }
 }
@@ -675,7 +675,7 @@ VOID DrawStaticBush(Graphics& graphics)
     if (!land)
         return;
 
-    const qtb::BushPMap& staticBush = land->getStaticBush();
+    const qtb::BushPMap& staticBush = land->staticBushes();
     for (qtb::BushPMap::const_iterator it = staticBush.begin(); it != staticBush.end(); ++it)
     {
         const qtb::Bush* bush = it->second;
@@ -692,7 +692,7 @@ VOID DrawDynamicBush(Graphics& graphics)
     if (!land)
         return;
 
-    const qtb::BushPMap& dynamicBush = land->getDynamicBush();
+    const qtb::BushPMap& dynamicBush = land->bushes();
     for (qtb::BushPMap::const_iterator it = dynamicBush.begin(); it != dynamicBush.end(); ++it)
     {
         const qtb::Bush* bush = it->second;
@@ -730,7 +730,7 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     if (-1 == cursorBushGroupID)
         return;
 
-    const qtb::BushGroupPMap& bushGroupMap = land->getBushGroup();
+    const qtb::BushGroupPMap& bushGroupMap = land->bushGroups();
     qtb::BushGroupPMap::const_iterator it = bushGroupMap.find(cursorBushGroupID);
     if (bushGroupMap.end() == it)
         return;
@@ -748,7 +748,7 @@ VOID DrawBushGroup(Graphics& graphics)
     if (!land)
         return;
 
-    const qtb::BushGroupPMap& bushGroupMap = land->getBushGroup();
+    const qtb::BushGroupPMap& bushGroupMap = land->bushGroups();
     for (qtb::BushGroupPMap::const_iterator it = bushGroupMap.begin(); it != bushGroupMap.end(); ++it)
     {
         const qtb::BushGroup* bushGroup = it->second;

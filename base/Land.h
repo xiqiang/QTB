@@ -14,33 +14,23 @@ namespace qtb
 		virtual ~Land();
 
 	public:
-		unsigned int AllocBushID() {
-			return m_nextBushID++;
-		}
-
-		unsigned int AllocBushGroupID() {
-			return m_nextBushGroupID++;
-		}
-
-		unsigned int AllocAreaID() {
-			return m_nextAreaID++;
-		}
-
 		void					clear();
-		void					rebuild(const AreaMap& areaMap);
-		unsigned int			createDynamicBush(const Area& area, Area* influence = NULL);
-		bool					removeDynamicBush(unsigned int id, Area* influence = NULL);
 
-		const BushPMap&			getStaticBush() const { return m_staticBushMap; }
-		const BushPMap&			getDynamicBush() const { return m_dynamicBushMap; }
-		const BushGroupPMap&	getBushGroup() const { return m_bushGroupMap; }
+		void					rebuild(const AreaList& areas);
+		const BushPMap&			staticBushes() const { return m_staticBushes; }
+
+		unsigned int			createBush(const Area& area, Area* influence = NULL);
+		bool					removeBush(unsigned int id, Area* influence = NULL);
+		const BushPMap&			bushes() const { return m_dynamicBushes; }
+
+		const BushGroupPMap&	bushGroups() const { return m_bushGroups; }
 
 	private:
-		void					generateBushMap(const AreaMap& areaMap, BushPMap& bushMap);
-		void					recycleBushGroup(BushGroup* group);
+		void					generateBushMap(const AreaList& areas, BushPMap& bushes);
 
 		BushGroup*				resideBush(Bush* bush);
 		void					resideBushGroup(BushGroup* group);
+		void					recycleBushGroup(BushGroup* group);
 
 		void					clearBushMap(BushPMap& bushMap);
 		void					clearBushGroup();
@@ -48,12 +38,11 @@ namespace qtb
 	private:
 		unsigned int	m_nextBushID;
 		unsigned int	m_nextBushGroupID;
-		unsigned int	m_nextAreaID;
 
 	private:
-		BushPMap		m_staticBushMap;
-		BushPMap		m_dynamicBushMap;
-		BushGroupPMap	m_bushGroupMap;
+		BushPMap		m_staticBushes;
+		BushPMap		m_dynamicBushes;
+		BushGroupPMap	m_bushGroups;
 
 	};
 }

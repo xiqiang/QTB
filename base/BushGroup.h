@@ -5,42 +5,40 @@
 
 namespace qtb 
 {
-	class Land;
 	class Zone;
 
 	class BushGroup
 	{
 	public:
+		friend class Land;
 		friend class Zone;
 
-	public:
-		BushGroup(Land* land);
+	private:
+		BushGroup(unsigned int id);
 
 	public:
-		unsigned int		id() const { return m_id; }
-		const Area&			overall() const { return m_overall; }
-		Zone*				zone() const { return m_zone; }
+		unsigned int	id() const { return m_id; }
+		const Area&		overall() const { return m_overall; }
+		Zone*			zone() const { return m_zone; }
+		const BushPMap&	bushes() { return m_bushes; }
 
-		void				addBush(Bush* bush);
-		void				removeBush(unsigned int bushID);
+		bool			overlap(const Bush& bush) const;
+		bool			contains(float x, float y, unsigned int* bushID = NULL) const;
 
-		bool				overlap(const Bush& r) const;
-		void				splice(BushGroup& r);
-		bool				bushCheck(float x, float y, unsigned int* bushID = NULL) const;
-
-		const BushPMap&		bushMap() { return m_bushMap; }
+		void			add(Bush* bush);
+		void			remove(unsigned int bushID);
+		void			splice(BushGroup& other);
 
 	private:
-		Land*			m_land;
-		Zone*			m_zone;
 		unsigned int	m_id;
+		Zone*			m_zone;
 
 	private:
-		BushPMap		m_bushMap;
+		BushPMap		m_bushes;
 		Area			m_overall;
 	};
 
-	typedef std::map<unsigned int, BushGroup*> BushGroupPMap;
+	typedef std::map<unsigned int, BushGroup*>	BushGroupPMap;
 
 }
 

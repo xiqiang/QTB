@@ -21,75 +21,78 @@ namespace qtb
 		QTree(const Area& area, QTree* parent = NULL) {
 			m_area = area;
 			m_parent = parent;
-			memset(m_childs, 0, sizeof(m_childs));
+			memset(m_children, 0, sizeof(m_children));
 			m_hasChild = false;
 		}
 
 		virtual ~QTree() {
 			for (int i = 0; i < CHILD_COUNT; ++i)
 			{
-				if (m_childs[i])
-					delete m_childs[i];
+				if (m_children[i])
+					delete m_children[i];
 			}
 		}
 
-		virtual QTree*	newChild(const Area& area) = 0;
+	protected:
+		virtual QTree* newChild(const Area& area) = 0;
 
 	public:
 		const Area& area() { return m_area; }
 
-		void devide(float minQTreeSize) {
-			float childWidth = m_area.width() * 0.5f;
-			float childHeight = m_area.height() * 0.5f;
+		void devide(float minSize) {
+			assert(false == m_hasChild);
 
-			if (childWidth <= minQTreeSize || childHeight <= minQTreeSize)
+			float width = m_area.width() * 0.5f;
+			float height = m_area.height() * 0.5f;
+
+			if (width <= minSize || height <= minSize)
 				return;
 
 			float cx = m_area.x();
 			float cy = m_area.y();
 
-			Area areaLB(cx - childWidth, cx, cy - childHeight, cy);
-			m_childs[LB] = newChild(areaLB);
-			m_childs[LB]->devide(minQTreeSize);
+			Area areaLB(cx - width, cx, cy - height, cy);
+			m_children[LB] = newChild(areaLB);
+			m_children[LB]->devide(minSize);
 
-			Area areaLT(cx - childWidth, cx, cy, cy + childHeight);
-			m_childs[LT] = newChild(areaLT);
-			m_childs[LT]->devide(minQTreeSize);
+			Area areaLT(cx - width, cx, cy, cy + height);
+			m_children[LT] = newChild(areaLT);
+			m_children[LT]->devide(minSize);
 
-			Area areaRB(cx, cx + childWidth, cy - childHeight, cy);
-			m_childs[RB] = newChild(areaRB);
-			m_childs[RB]->devide(minQTreeSize);
+			Area areaRB(cx, cx + width, cy - height, cy);
+			m_children[RB] = newChild(areaRB);
+			m_children[RB]->devide(minSize);
 
-			Area areaRT(cx, cx + childWidth, cy, cy + childHeight);
-			m_childs[RT] = newChild(areaRT);
-			m_childs[RT]->devide(minQTreeSize);
+			Area areaRT(cx, cx + width, cy, cy + height);
+			m_children[RT] = newChild(areaRT);
+			m_children[RT]->devide(minSize);
 
 			m_hasChild = true;
 		}
 
-		QTree* getChild(unsigned int index) {
+		QTree* child(unsigned int index) {
 			assert(index < CHILD_COUNT);
-			return m_childs[index];
+			return m_children[index];
 		}
 
-		QTree* getChild(float x, float y) {
+		QTree* child(float x, float y) {
 			if (!m_hasChild)
 				return NULL;
 
 			int ix = x - m_area.x() >= 0 ? 1 : 0;
 			int iy = y - m_area.y() >= 0 ? 1 : 0;
-			return m_childs[(ix << 1) | iy];
+			return m_children[(ix << 1) | iy];
 		}
 
-		QTree* locateTree(const Area& area) {
-			QTree* child = getChild(area.x(), area.y());
-			if (child && child->area().contains(area))
-				return child->locateTree(area);
+		QTree* locate(const Area& area) {
+			QTree* c = child(area.x(), area.y());
+			if (c && c->area().contains(area))
+				return c->locate(area);
 			else
 				return this;
 		}
 
-		void getOerlapTrees(const Area& area, std::list<QTree*>& list) {
+		void layer(const Area& area, std::list<QTree*>& list) {
 			if (!m_area.overlap(area))
 				return;
 
@@ -97,17 +100,23 @@ namespace qtb
 			if (!m_hasChild)
 				return;
 
-			for (int i = 0; i < CHILD_COUNT; ++i)
-			{
-				assert(m_childs[i]);
-				m_childs[i]->getOerlapTrees(area, list);
-			}
+			assert(m_children[LB]);
+			m_children[LB]->layer(area, list);
+
+			assert(m_children[LT]);
+			m_children[LT]->layer(area, list);
+
+			assert(m_children[RB]);
+			m_children[RB]->layer(area, list);
+
+			assert(m_children[RT]);
+			m_children[RT]->layer(area, list);
 		}
 
 	protected:
 		Area	m_area;
 		QTree*	m_parent;
-		QTree*	m_childs[CHILD_COUNT];
+		QTree*	m_children[CHILD_COUNT];
 		bool	m_hasChild;
 	};
 }

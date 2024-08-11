@@ -10,24 +10,30 @@ namespace qtb
 		: public QTree
 	{
 	public:
+		friend class Land;
+
+	private:
 		Zone(const Area& area, Zone* parent = NULL);
-		virtual QTree*	newChild(const Area& area);
+
+	protected:
+		virtual QTree*			newChild(const Area& area);
 
 	public:
 		unsigned int			generation() const { return m_generation; }
-		bool					bushCross(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
+
+		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
 
 	public:
-		void					addResideBushGroup(BushGroup* group);
-		void					removeResideBushGroup(unsigned int groupID);
-		const BushGroupPMap&	getResideBushGroup() const { return m_resideBushGroupMap; }
+		void					addBushGroup(BushGroup* group);
+		void					removeBushGroup(unsigned int groupID);
+		const BushGroupPMap&	bushGroups() const { return m_bushGroups; }
 
 	private:
-		bool					_bushCross(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL) const;
+		bool					_bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL) const;
 
 	private:
 		unsigned int	m_generation;
-		BushGroupPMap	m_resideBushGroupMap;
+		BushGroupPMap	m_bushGroups;
 	};
 }
 
