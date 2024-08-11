@@ -268,6 +268,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (land)
                     land->clear();
                 staticAreas.clear();
+                bushIDList.clear();
                 break;
             case IDM_LAND_RANDOMSTATICBUSH:
                 RandomStaticBush();
@@ -783,7 +784,7 @@ VOID DrawTexts(Graphics& graphics)
     RectF rc(area.left, area.bottom, area.width(), area.height());
 
     // Initialize arguments.
-    Font myFont(L"Arial", 12);
+    Font myFont(L"Arial", 10);
     SolidBrush blackBrush(Color(255, 64, 64, 64));
     SolidBrush greyBrush(Color(255, 128, 128, 128));
 
