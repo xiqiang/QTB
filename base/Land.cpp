@@ -61,7 +61,7 @@ namespace qtb
 
 		Bush* bush = itFind->second;
 		assert(bush);
-		BushGroup* group = bush->group();
+		BushGroup* group = bush->m_group;
 		assert(group);
 
 		if (influence)
@@ -144,8 +144,8 @@ namespace qtb
 		else
 		{
 			BushGroup* group = m_bushGroups[collisions[0]];
-			assert(group->zone());
-			group->zone()->removeBushGroup(collisions[0]);
+			assert(group->m_zone);
+			group->m_zone->removeBushGroup(collisions[0]);
 			group->add(bush);
 
 			for (size_t i = 1; i < collisions.size(); ++i)
@@ -155,7 +155,7 @@ namespace qtb
 				group->splice(*spliceGroup);
 
 				assert(spliceGroup->zone());
-				spliceGroup->zone()->removeBushGroup(collisions[i]);
+				spliceGroup->m_zone->removeBushGroup(collisions[i]);
 
 				m_bushGroups.erase(collisions[i]);
 				delete spliceGroup;
@@ -179,8 +179,8 @@ namespace qtb
 		assert(group);
 		assert(m_bushGroups.find(group->id()) != m_bushGroups.end());
 
-		assert(group->zone());
-		group->zone()->removeBushGroup(group->id());
+		assert(group->m_zone);
+		group->m_zone->removeBushGroup(group->id());
 
 		BushGroupPMap groupMap;
 		const BushPMap& bushMap = group->bushes();
@@ -240,8 +240,8 @@ namespace qtb
 		{
 			BushGroup* group = it->second;
 			assert(group);
-			if (group->zone())
-				group->zone()->removeBushGroup(group->id());
+			if (group->m_zone)
+				group->m_zone->removeBushGroup(group->id());
 			delete group;
 		}
 		m_bushGroups.clear();

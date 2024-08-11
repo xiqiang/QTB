@@ -33,9 +33,6 @@ namespace qtb
 			}
 		}
 
-	protected:
-		virtual QTree* newChild(const Area& area) = 0;
-
 	public:
 		const Area& area() { return m_area; }
 
@@ -112,6 +109,9 @@ namespace qtb
 			assert(m_children[RT]);
 			m_children[RT]->layer(area, list);
 		}
+
+	protected:
+		virtual QTree* newChild(const Area& area) = 0;
 
 	protected:
 		Area	m_area;

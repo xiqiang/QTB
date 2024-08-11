@@ -19,12 +19,13 @@ namespace qtb
 	public:
 		unsigned int	id() const { return m_id; }
 		const Area&		overall() const { return m_overall; }
-		Zone*			zone() const { return m_zone; }
 		const BushPMap&	bushes() { return m_bushes; }
+		const Zone*		zone() const { return m_zone; }
 
 		bool			overlap(const Bush& bush) const;
 		bool			contains(float x, float y, unsigned int* bushID = NULL) const;
 
+	private:
 		void			add(Bush* bush);
 		void			remove(unsigned int bushID);
 		void			splice(BushGroup& other);
@@ -33,7 +34,6 @@ namespace qtb
 		unsigned int	m_id;
 		Zone*			m_zone;
 
-	private:
 		BushPMap		m_bushes;
 		Area			m_overall;
 	};

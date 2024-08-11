@@ -18,24 +18,25 @@ namespace qtb
 		Bush(unsigned int id);
 
 	public:
-		unsigned int	id() const { return m_id; }
-		BushGroup*		group() const { return m_group; }
-		const Area&		overall() const { return m_overall; }
+		unsigned int		id() const { return m_id; }
+		const Area&			overall() const { return m_overall; }
+		const BushGroup*	group() const { return m_group; }
 
-		bool			overlap(const Bush& other) const;
-		bool			overlap(const Area& area) const;
-		bool			contains(float x, float y) const;
-
-		void			add(const Area& area);
-		void			splice(Bush& other);
+		bool				overlap(const Bush& other) const;
+		bool				overlap(const Area& area) const;
+		bool				contains(float x, float y) const;
 
 	private:
-		unsigned int	m_id;
-		BushGroup*		m_group;
+		void				add(const Area& area);
+		void				splice(Bush& other);
 
 	private:
-		AreaList		m_areaList;
-		Area			m_overall;
+		unsigned int		m_id;
+		BushGroup*			m_group;
+
+	private:
+		AreaList			m_areaList;
+		Area				m_overall;
 	};
 
 	typedef std::list<Bush*>				BushPList;
