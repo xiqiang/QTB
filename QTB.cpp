@@ -62,26 +62,16 @@ BOOL                bViewQTree = FALSE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
-BOOL                bViewRobot = FALSE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
-PerfTool            perfTool;
+BOOL                bViewRobot = FALSE;
+BOOL                bRobotAutoBush = FALSE;
 
 int                 nRebuildCount = 0;
 double              dRebuildTime = 0;
 double              dRebuildTimeTotal = 0;
 double              dRebuildTimeAvg = 0;
-
-int                 nCreateBushCount = 0;
-double              dCreateBushTime = 0;
-double              dCreateBushTimeTotal = 0;
-double              dCreateBushTimeAvg = 0;
-
-int                 nRemoveBushCount = 0;
-double              dRemoveBushTime = 0;
-double              dRemoveBushTimeTotal = 0;
-double              dRemoveBushTimeAvg = 0;
 
 int                 nBushCrossCount = 0;
 double              dBushCrossTime = 0;
@@ -100,11 +90,11 @@ VOID                TermLand();
 VOID                InitRobot();
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
-VOID                CreateDynamicBush(const qtb::Area& area); 
-VOID                RemoveDynamicBush(unsigned int bushID);
 
 VOID                OnUpdate();
 VOID                GetMouseArea(qtb::Area& area);
+VOID                MouseBushHit();
+VOID                RobotTick();
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
@@ -285,8 +275,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                     std::list<unsigned int>::iterator it = bushIDList.begin();
                     std::advance(it, rand() % size);
-                    RemoveDynamicBush(*it);
-                    bushIDList.erase(it);
+                    if(RemoveBush(land, *it))
+                        bushIDList.erase(it);
                 }
                 break;
             case ID_VIEW_QTREE:
@@ -317,13 +307,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICBUSH, MF_BYCOMMAND | check);
                 }
                 break;
-            case ID_VIEW_ROBOT:
-                {
-                    bViewRobot = !bViewRobot;
-                    UINT check = bViewRobot ? MF_CHECKED : MF_UNCHECKED;
-                    CheckMenuItem(hmenuBar, ID_VIEW_ROBOT, MF_BYCOMMAND | check);
-                }
-                break;
             case ID_VIEW_SELECTEDBUSHGROUP:
                 {
                     bViewSelectedBushGroup = !bViewSelectedBushGroup;
@@ -336,6 +319,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     bViewBushGroup = !bViewBushGroup;
                     UINT check = bViewBushGroup ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_BUSHGROUP, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_VIEW_ROBOT:
+                {
+                    bViewRobot = !bViewRobot;
+                    UINT check = bViewRobot ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_ROBOT, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_ROBOT_AUTOBUSH:
+                {
+                    bRobotAutoBush = !bRobotAutoBush;
+                    UINT check = bRobotAutoBush ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_ROBOT_AUTOBUSH, MF_BYCOMMAND | check);
+
+                    if (land)
+                    {
+                        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+                            it->EnableBush(land, bRobotAutoBush);
+                    }
                 }
                 break;
             default:
@@ -372,8 +375,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 qtb::Area area;
                 GetMouseArea(area);
-                if(area.width() > 1 && area.height() > 1)
-                    CreateDynamicBush(area);
+                if (area.width() > 1 && area.height() > 1)
+                {
+                    unsigned int bushID = CreateBush(land, area);
+                    bushIDList.push_back(bushID);
+                }
             }
         }
         break;
@@ -382,7 +388,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             bRMouseDown = TRUE;
 
             if (cursorBushID != -1)
-                RemoveDynamicBush(cursorBushID);
+            {
+                if (RemoveBush(land, cursorBushID))
+                    cursorBushID = -1;
+            }
         }
         break;
     case WM_RBUTTONUP:
@@ -395,22 +404,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             cursorPos.X = GET_X_LPARAM(lParam);
             cursorPos.Y = GET_Y_LPARAM(lParam);
 
-            if (!land)
-                break;
-
-            cursorBushGroupID = -1;
-            cursorBushID = -1;
-
-            perfTool.Start();
-            land->bushContains((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
-            dBushCrossTime = perfTool.End();
-
-            dBushCrossTimeTotal += dBushCrossTime;
-            ++nBushCrossCount;
-            dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+            MouseBushHit();
 
             if (bRMouseDown && cursorBushID != -1)
-                RemoveDynamicBush(cursorBushID);
+            {
+                if (RemoveBush(land, cursorBushID))
+                    cursorBushID = -1;
+            }
         }
         break;
     default:
@@ -510,70 +510,15 @@ VOID RandomDynamicBush()
         float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
 
-        CreateDynamicBush(qtb::Area(x - w, x + w, y - h, y + h));
+        unsigned int bushID = CreateBush(land, qtb::Area(x - w, x + w, y - h, y + h));
+        bushIDList.push_back(bushID);
     }
-}
-
-VOID CreateDynamicBush(const qtb::Area& area)
-{
-    if (!land)
-        return;
-
-    unsigned int bushID = -1;
-
-    perfTool.Start();
-    bushID = land->createBush(area);
-    dCreateBushTime = perfTool.End();
-
-    dCreateBushTimeTotal += dCreateBushTime;
-    ++nCreateBushCount;
-    dCreateBushTimeAvg = dCreateBushTimeTotal / nCreateBushCount;
-
-    bushIDList.push_back(bushID);
 }
 
 VOID OnUpdate()
 {
-    if (!land)
-        return;
-
-    if (bViewRobot)
-    {
-        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
-        {
-            it->Tick(GetTickCount() / 1000.0f);
-            unsigned int bushGroupID = -1;
-
-            perfTool.Start();
-            land->bushContains(it->x(), it->y(), &bushGroupID);
-            dBushCrossTime = perfTool.End();
-
-            dBushCrossTimeTotal += dBushCrossTime;
-            ++nBushCrossCount;
-            dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
-
-            it->setBushGroupID(bushGroupID);
-        }
-    }
-}
-
-VOID RemoveDynamicBush(unsigned int bushID)
-{
-    if (!land)
-        return;
-
-    bool removed = false;
-
-    perfTool.Start();
-    removed = land->removeBush(bushID);
-    dRemoveBushTime = perfTool.End();
-
-    dRemoveBushTimeTotal += dRemoveBushTime;
-    ++nRemoveBushCount;
-    dRemoveBushTimeAvg = dRemoveBushTimeTotal / nRemoveBushCount;
-
-    if(removed)
-        cursorBushID = -1;
+    MouseBushHit();
+    RobotTick();
 }
 
 VOID GetMouseArea(qtb::Area& area)
@@ -582,6 +527,48 @@ VOID GetMouseArea(qtb::Area& area)
     area.bottom = (float)(cursorDownPos.Y < cursorPos.Y ? cursorDownPos.Y : cursorPos.Y);
     area.right = area.left + abs(cursorDownPos.X - cursorPos.X);
     area.top = area.bottom + abs(cursorDownPos.Y - cursorPos.Y);
+}
+
+VOID MouseBushHit()
+{
+    if (!land)
+        return;
+
+    cursorBushGroupID = -1;
+    cursorBushID = -1;
+
+    perfTool.Start();
+    land->bushContains((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
+    dBushCrossTime = perfTool.End();
+
+    dBushCrossTimeTotal += dBushCrossTime;
+    ++nBushCrossCount;
+    dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+}
+
+VOID RobotTick()
+{
+    if (!land)
+        return;
+
+    if (!bViewRobot)
+        return;
+
+    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    {
+        it->Tick(land, GetTickCount() / 1000.0f);
+        unsigned int bushGroupID = -1;
+
+        perfTool.Start();
+        land->bushContains(it->x(), it->y(), &bushGroupID);
+        dBushCrossTime = perfTool.End();
+
+        dBushCrossTimeTotal += dBushCrossTime;
+        ++nBushCrossCount;
+        dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+
+        it->setBushGroupID(bushGroupID);
+    }
 }
 
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)

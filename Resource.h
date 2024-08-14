@@ -25,6 +25,8 @@
 #define ID_VIEW_ROBOT                   32788
 #define ID_VIEW_QTREE                   32789
 #define ID_LAND_CLEAR                   32790
+#define ID_ROBOT_CREATE                 32791
+#define ID_ROBOT_AUTOBUSH               32792
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -33,7 +35,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        129
-#define _APS_NEXT_COMMAND_VALUE         32791
+#define _APS_NEXT_COMMAND_VALUE         32793
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
