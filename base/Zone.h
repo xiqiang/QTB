@@ -16,8 +16,6 @@ namespace qtb
 		Zone(const Area& area, Zone* parent = NULL);
 
 	public:
-		unsigned int			generation() const { return m_generation; }
-
 		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
 
 	protected:
@@ -31,7 +29,6 @@ namespace qtb
 		bool					_bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL) const;
 
 	private:
-		unsigned int	m_generation;
 		BushGroupPMap	m_bushGroups;
 	};
 }

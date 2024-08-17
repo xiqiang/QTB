@@ -21,6 +21,7 @@ namespace qtb
 		QTree(const Area& area, QTree* parent = NULL) {
 			m_area = area;
 			m_parent = parent;
+			m_generation = m_parent ? m_parent->generation() + 1 : 0;
 			memset(m_children, 0, sizeof(m_children));
 			m_hasChild = false;
 		}
@@ -35,6 +36,7 @@ namespace qtb
 
 	public:
 		const Area& area() { return m_area; }
+		unsigned int generation() const { return m_generation; }
 
 		void devide(float minSize) {
 			assert(false == m_hasChild);
@@ -114,10 +116,11 @@ namespace qtb
 		virtual QTree* newChild(const Area& area) = 0;
 
 	protected:
-		Area	m_area;
-		QTree*	m_parent;
-		QTree*	m_children[CHILD_COUNT];
-		bool	m_hasChild;
+		Area			m_area;
+		QTree*			m_parent;
+		unsigned int	m_generation;
+		QTree*			m_children[CHILD_COUNT];
+		bool			m_hasChild;
 	};
 }
 

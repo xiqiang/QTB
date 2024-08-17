@@ -777,49 +777,64 @@ VOID DrawTexts(Graphics& graphics)
 
     TCHAR string[64] = _T("");
 
-    // generate static bush
+    // static bush count
     PointF origin(area.right + MIN_ZONE_SIZE, 0.0f);
-    _sntprintf_s(string, 64, _T("RebuildTime: %f"), dRebuildTime);
+    _sntprintf_s(string, 64, _T("static bush: %d"), land->staticBushes().size());
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // dynamic bush count
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("dynamic bush: %d"), land->bushes().size());
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // bush group count
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("group: %d"), land->bushGroups().size());
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // generate static bush
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("rebuild time: %f"), dRebuildTime);
     graphics.DrawString( string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("RebuildTimeAvg: %f"), dRebuildTimeAvg);
+    _sntprintf_s(string, 64, _T("rebuild time avg: %f"), dRebuildTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // create dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("CreateBushTime: %f"), dCreateBushTime);
+    _sntprintf_s(string, 64, _T("create bush time: %f"), dCreateBushTime);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("CreateBushTimeAvg: %f"), dCreateBushTimeAvg);
+    _sntprintf_s(string, 64, _T("create bush time avg: %f"), dCreateBushTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // remove dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("RemoveBushTime: %f"), dRemoveBushTime);
+    _sntprintf_s(string, 64, _T("remove bush time: %f"), dRemoveBushTime);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("RemoveBushTimeAvg: %f"), dRemoveBushTimeAvg);
+    _sntprintf_s(string, 64, _T("remove bush time avg: %f"), dRemoveBushTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // cursor cross
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("BushCrossTime: %f"), dBushCrossTime);
+    _sntprintf_s(string, 64, _T("hit time: %f"), dBushCrossTime);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("BushCrossTimeAvg: %f"), dBushCrossTimeAvg);
+    _sntprintf_s(string, 64, _T("hit time avg: %f"), dBushCrossTimeAvg);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("PointBushGroup: %d"), cursorBushGroupID);
+    _sntprintf_s(string, 64, _T("group in mouse: %d"), cursorBushGroupID);
     SolidBrush bushGroupBrush(drawData.GetBushGroupRes(cursorBushGroupID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("PointBush: %d"), cursorBushID);
+    _sntprintf_s(string, 64, _T("bush in mouse: %d"), cursorBushID);
     SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
 }

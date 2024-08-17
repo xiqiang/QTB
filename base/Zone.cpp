@@ -6,10 +6,6 @@ namespace qtb
 	Zone::Zone(const Area& area,  Zone* parent /*= NULL*/)
 		: QTree(area, parent)
 	{
-		if (parent)
-			m_generation = parent->generation() + 1;
-		else
-			m_generation = 0;
 	}
 
 	QTree* Zone::newChild(const Area& area)
