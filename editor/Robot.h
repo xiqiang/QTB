@@ -14,13 +14,9 @@ const float BUSH_TIME_MAX = 3.0f;
 const float ROBOT_SPEED_MIN = 5.0f;
 const float ROBOT_SPEED_MAX = 15.0f;
 
-#ifdef _DEBUG
-const float BUSH_LIVE_MIN = 3.0f;
-const float BUSH_LIVE_MAX = 5.0f;
-#else
 const float BUSH_LIVE_MIN = 5.0f;
 const float BUSH_LIVE_MAX = 10.0f;
-#endif
+
 class Robot
 {
 public:

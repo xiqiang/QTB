@@ -29,15 +29,15 @@ using namespace Gdiplus;
 const float LAND_WIDTH = 1000.0f;
 const float LAND_HEIGHT = 1000.0f;
 const float MIN_ZONE_SIZE = 30.0f;
-const int   STATIC_AREA_COUNT = 3000;
-const int   DYNAMIC_AREA_COUNT = 1000;
+const int   STATIC_AREA_COUNT = 5000;
+const int   DYNAMIC_AREA_COUNT = 2500;
 const int   ROBOT_COUNT = 1000;
 #else
 const float LAND_WIDTH              = 2000.0f;
 const float LAND_HEIGHT             = 2000.0f;
 const float MIN_ZONE_SIZE           = 30.0f;
 const int   STATIC_AREA_COUNT       = 20000;
-const int   DYNAMIC_AREA_COUNT      = 5000;
+const int   DYNAMIC_AREA_COUNT      = 10000;
 const int   ROBOT_COUNT             = 5000;
 #endif
 
@@ -74,15 +74,15 @@ float               viewScale = 1.0f;
 PointF              viewPosCache;
 PointF              viewPos;
 
-BOOL                bViewQTree = FALSE;
+BOOL                bViewQTree = TRUE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
 
-BOOL                bViewRobot = FALSE;
-BOOL                bRobotAutoBush = FALSE;
+BOOL                bViewRobot = TRUE;
+BOOL                bRobotAutoBush = TRUE;
 
 int                 nRebuildCount = 0;
 double              dRebuildTime = 0;
@@ -101,9 +101,12 @@ VOID                TermInstance(HINSTANCE);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+VOID                ResetViewport(HWND hWnd);
+
 VOID                InitLand();
 VOID                TermLand();
 VOID                InitRobot();
+VOID                EnableRobotBush(BOOL value);
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
 
@@ -233,6 +236,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWndMain, nCmdShow);
    UpdateWindow(hWndMain);
 
+   ResetViewport(hWndMain);
    InitLand();
    InitRobot();
 
@@ -297,9 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_VIEW_RESET:
                 {
-                    viewScale = 1.0f;
-                    viewPos.X = 0.0f;
-                    viewPos.Y = 0.0f;
+                    ResetViewport(hWnd);
                 }
                 break;
             case ID_VIEW_QTREE:
@@ -357,11 +359,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     UINT check = bRobotAutoBush ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_ROBOT_AUTOBUSH, MF_BYCOMMAND | check);
 
-                    if (land)
-                    {
-                        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
-                            it->EnableBush(land, bRobotAutoBush);
-                    }
+                    EnableRobotBush(bRobotAutoBush);
                 }
                 break;
             default:
@@ -508,6 +506,16 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+VOID ResetViewport(HWND hWnd)
+{
+    viewScale = 3.0f;
+
+    RECT rcClient;
+    GetClientRect(hWnd, &rcClient);
+    viewPos.X = (1 / viewScale) * (rcClient.right - rcClient.left) * 0.5f - LAND_WIDTH * 0.5f;
+    viewPos.Y = (1 / viewScale) * (rcClient.bottom - rcClient.top) * 0.5f - LAND_HEIGHT * 0.5f;
+}
+
 VOID InitLand()
 {
     srand((unsigned int)time(NULL));
@@ -516,7 +524,7 @@ VOID InitLand()
     land = new qtb::Land(area);
     land->devide(MIN_ZONE_SIZE);
 
-    //RandomStaticBush();
+    RandomStaticBush();
     //RandomDynamicBush();
 }
 
@@ -538,6 +546,17 @@ VOID InitRobot()
     {
         for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
             it->Init(land->area());
+    }
+
+    EnableRobotBush(bRobotAutoBush);
+}
+
+VOID EnableRobotBush(BOOL value)
+{
+    if (land)
+    {
+        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+            it->EnableBush(land, value);
     }
 }
 
@@ -866,17 +885,29 @@ VOID DrawTexts(Graphics& graphics)
 
     // static bush count
     origin = origin + PointF(0.0f, 20.0f);
+#ifdef _WIN64
     _sntprintf_s(string, 64, _T("static bush: %llu"), land->staticBushes().size());
+#else
+    _sntprintf_s(string, 64, _T("static bush: %u"), land->staticBushes().size());
+#endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // dynamic bush count
     origin = origin + PointF(0.0f, 20.0f);
+#ifdef _WIN64
     _sntprintf_s(string, 64, _T("dynamic bush: %llu"), land->bushes().size());
+#else
+    _sntprintf_s(string, 64, _T("dynamic bush: %u"), land->bushes().size());
+#endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // bush group count
     origin = origin + PointF(0.0f, 20.0f);
+#ifdef _WIN64
     _sntprintf_s(string, 64, _T("bush group: %llu"), land->bushGroups().size());
+#else
+    _sntprintf_s(string, 64, _T("bush group: %u"), land->bushGroups().size());
+#endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // generate static bush
@@ -929,21 +960,21 @@ VOID DrawTexts(Graphics& graphics)
 
     // view scale
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("view scale: %f"), viewScale);
+    _sntprintf_s(string, 64, _T("view scale: %.2f"), viewScale);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // view pos
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("view scale: %f"), viewScale);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("view pos: %f,%f"), viewPos.X, viewPos.Y);
+    _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // robot count
     origin = origin + PointF(0.0f, 30.0f);
+#ifdef _WIN64
     _sntprintf_s(string, 64, _T("robot count: %llu"), bViewRobot ? robotList.size() : 0);
+#else
+    _sntprintf_s(string, 64, _T("robot count: %u"), bViewRobot ? robotList.size() : 0);
+#endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
 }
