@@ -9,6 +9,8 @@ public:
 	PerfTool() {
 		QueryPerformanceFrequency(&m_frequency);
 		m_quadpart = (double)m_frequency.QuadPart;
+		m_timeStart.QuadPart = 0;
+		m_timeEnd.QuadPart = 0;
 	}
 
 	void Start() {
@@ -21,10 +23,10 @@ public:
 	}
 
 private:
-	LARGE_INTEGER	m_frequency;	//计时器频率  
-	LARGE_INTEGER	m_timeStart;	//开始时间  
-	LARGE_INTEGER	m_timeEnd;		//结束时间  
-	double			m_quadpart;		//计时器频率  
+	LARGE_INTEGER	m_frequency;	//计时器频率
+	double			m_quadpart;		//计时器频率
+	LARGE_INTEGER	m_timeStart;	//开始时间 
+	LARGE_INTEGER	m_timeEnd;		//结束时间 
 };
 
 #endif

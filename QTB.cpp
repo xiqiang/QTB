@@ -25,14 +25,21 @@ using namespace Gdiplus;
 
 #define MAX_LOADSTRING 100
 
-const float LAND_WIDTH              = 700.0f;
-const float LAND_HEIGHT             = 700.0f;
-const float MIN_ZONE_SIZE           = 20.0f;
-const int   STATIC_AREA_COUNT       = 1000;
-const int   DYNAMIC_AREA_COUNT      = 500;
-const float RAND_AREA_SIZE_MIN      = 3.0f;
-const float RAND_AREA_SIZE_MAX      = 15.0f;
-const int   ROBOT_COUNT             = 500;
+#ifdef _DEBUG
+const float LAND_WIDTH = 1000.0f;
+const float LAND_HEIGHT = 1000.0f;
+const float MIN_ZONE_SIZE = 30.0f;
+const int   STATIC_AREA_COUNT = 3000;
+const int   DYNAMIC_AREA_COUNT = 1000;
+const int   ROBOT_COUNT = 1000;
+#else
+const float LAND_WIDTH              = 2000.0f;
+const float LAND_HEIGHT             = 2000.0f;
+const float MIN_ZONE_SIZE           = 30.0f;
+const int   STATIC_AREA_COUNT       = 20000;
+const int   DYNAMIC_AREA_COUNT      = 5000;
+const int   ROBOT_COUNT             = 5000;
+#endif
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -48,15 +55,24 @@ std::list<unsigned int> bushIDList;
 
 BOOL                bLMouseDown = FALSE;
 BOOL                bRMouseDown = FALSE;
-Point               cursorDownPos;
-Point               cursorUpPos;
+BOOL                bMMouseDown = FALSE;
+Point               mouseDownPosL;
+Point               mouseUpPosL;
+Point               mouseDownPosM;
+Point               mouseUpPosM;
 Point               cursorPos;
+PointF              cursorScalePos;
+
 unsigned int        cursorBushGroupID = -1;
 unsigned int        cursorBushID = -1;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
 qtb::AreaList       staticAreas;
+
+float               viewScale = 1.0f;
+PointF              viewPosCache;
+PointF              viewPos;
 
 BOOL                bViewQTree = FALSE;
 BOOL                bViewStaticAreas = TRUE;
@@ -279,6 +295,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         bushIDList.erase(it);
                 }
                 break;
+            case ID_VIEW_RESET:
+                {
+                    viewScale = 1.0f;
+                    viewPos.X = 0.0f;
+                    viewPos.Y = 0.0f;
+                }
+                break;
             case ID_VIEW_QTREE:
                 {
                     bViewQTree = !bViewQTree;
@@ -360,15 +383,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_LBUTTONDOWN:
         {
-            cursorDownPos.X = GET_X_LPARAM(lParam);
-            cursorDownPos.Y = GET_Y_LPARAM(lParam);
+            mouseDownPosL.X = GET_X_LPARAM(lParam);
+            mouseDownPosL.Y = GET_Y_LPARAM(lParam);
             bLMouseDown = TRUE;
         }
         break;
     case WM_LBUTTONUP:
         {
-            cursorUpPos.X = GET_X_LPARAM(lParam);
-            cursorUpPos.Y = GET_Y_LPARAM(lParam);
+            mouseUpPosL.X = GET_X_LPARAM(lParam);
+            mouseUpPosL.Y = GET_Y_LPARAM(lParam);
             bLMouseDown = FALSE;
 
             if (land)
@@ -377,6 +400,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 GetMouseArea(area);
                 if (area.width() > 1 && area.height() > 1)
                 {
+                    area.left = area.left * (1 / viewScale) - viewPos.X;
+                    area.bottom = area.bottom * (1 / viewScale) - viewPos.Y;
+                    area.right = area.right * (1 / viewScale) - viewPos.X;
+                    area.top = area.top * (1 / viewScale) - viewPos.Y;
+
                     unsigned int bushID = CreateBush(land, area);
                     bushIDList.push_back(bushID);
                 }
@@ -395,10 +423,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_RBUTTONUP:
-    {
-        bRMouseDown = FALSE;
-    }
-    break;
+        {
+            bRMouseDown = FALSE;
+        }
+        break;
+
+    case WM_MBUTTONDOWN:
+        {
+            mouseDownPosM.X = GET_X_LPARAM(lParam);
+            mouseDownPosM.Y = GET_Y_LPARAM(lParam);
+            viewPosCache = viewPos;
+            bMMouseDown = TRUE;
+
+        }
+        break;
+    case WM_MBUTTONUP:
+        {
+            mouseUpPosM.X = GET_X_LPARAM(lParam);
+            mouseUpPosM.Y = GET_Y_LPARAM(lParam);
+
+            bMMouseDown = FALSE;
+        }
+        break;
     case WM_MOUSEMOVE:
         {
             cursorPos.X = GET_X_LPARAM(lParam);
@@ -411,6 +457,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (RemoveBush(land, cursorBushID))
                     cursorBushID = -1;
             }
+
+            if (bMMouseDown)
+            {
+                viewPos.X = viewPosCache.X + (1 / viewScale) * (cursorPos.X - mouseDownPosM.X);
+                viewPos.Y = viewPosCache.Y + (1 / viewScale) * (cursorPos.Y - mouseDownPosM.Y);
+            }
+
+            cursorScalePos.X = (1 / viewScale) * cursorPos.X;
+            cursorScalePos.Y = (1 / viewScale) * cursorPos.Y;
+        }
+        break;
+    case WM_MOUSEWHEEL:
+        {
+            INT zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+            viewScale += (float)zDelta / WHEEL_DELTA * 0.2f;
+
+            PointF scalePos;
+            scalePos.X = (1 / viewScale) * cursorPos.X;
+            scalePos.Y = (1 / viewScale) * cursorPos.Y;
+
+            viewPos.X += scalePos.X - cursorScalePos.X;
+            viewPos.Y += scalePos.Y - cursorScalePos.Y;
+            cursorScalePos = scalePos;
         }
         break;
     default:
@@ -483,8 +552,8 @@ VOID RandomStaticBush()
     {
         float x = RangeRand(0.0f, (float)LAND_WIDTH);
         float y = RangeRand(0.0f, (float)LAND_HEIGHT);
-        float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
-        float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+        float w = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
+        float h = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
 
         staticAreas.push_back(qtb::Area(x - w, x + w, y - h, y + h));
     }
@@ -507,8 +576,8 @@ VOID RandomDynamicBush()
     {
         float x = RangeRand(0.0f, (float)LAND_WIDTH);
         float y = RangeRand(0.0f, (float)LAND_HEIGHT);
-        float w = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
-        float h = RangeRand(RAND_AREA_SIZE_MIN, RAND_AREA_SIZE_MAX) * 0.5f;
+        float w = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
+        float h = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
 
         unsigned int bushID = CreateBush(land, qtb::Area(x - w, x + w, y - h, y + h));
         bushIDList.push_back(bushID);
@@ -523,10 +592,10 @@ VOID OnUpdate()
 
 VOID GetMouseArea(qtb::Area& area)
 {
-    area.left = (float)(cursorDownPos.X < cursorPos.X ? cursorDownPos.X : cursorPos.X);
-    area.bottom = (float)(cursorDownPos.Y < cursorPos.Y ? cursorDownPos.Y : cursorPos.Y);
-    area.right = area.left + abs(cursorDownPos.X - cursorPos.X);
-    area.top = area.bottom + abs(cursorDownPos.Y - cursorPos.Y);
+    area.left = (float)(mouseDownPosL.X < cursorPos.X ? mouseDownPosL.X : cursorPos.X);
+    area.bottom = (float)(mouseDownPosL.Y < cursorPos.Y ? mouseDownPosL.Y : cursorPos.Y);
+    area.right = area.left + abs(mouseDownPosL.X - cursorPos.X);
+    area.top = area.bottom + abs(mouseDownPosL.Y - cursorPos.Y);
 }
 
 VOID MouseBushHit()
@@ -537,8 +606,11 @@ VOID MouseBushHit()
     cursorBushGroupID = -1;
     cursorBushID = -1;
 
+    float x = cursorPos.X * (1 / viewScale) - viewPos.X;
+    float y = cursorPos.Y * (1 / viewScale) - viewPos.Y;
+
     perfTool.Start();
-    land->bushContains((float)cursorPos.X, (float)cursorPos.Y, &cursorBushGroupID, &cursorBushID);
+    land->bushContains(x, y, &cursorBushGroupID, &cursorBushID);
     dBushCrossTime = perfTool.End();
 
     dBushCrossTimeTotal += dBushCrossTime;
@@ -556,7 +628,7 @@ VOID RobotTick()
 
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
-        it->Tick(land, GetTickCount() / 1000.0f);
+        it->Tick(land, GetTickCount64() / 1000.0f);
         unsigned int bushGroupID = -1;
 
         perfTool.Start();
@@ -636,7 +708,7 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
     assert(tree);
 
     const qtb::Area& area = tree->area();
-    RectF rc(area.left, area.bottom, area.width(), area.height());
+    RectF rc(viewScale * (area.left + viewPos.X), viewScale * (area.bottom + viewPos.Y), viewScale * area.width(), viewScale * area.height());
     Pen pen(Color(32, 0, 128, 128));
     graphics.DrawRectangle(&pen, rc);
 
@@ -653,7 +725,7 @@ VOID DrawStaticAreas(Graphics& graphics)
     SolidBrush brush(Color(128, 128, 192, 0));
     for (qtb::AreaList::const_iterator it = staticAreas.begin(); it != staticAreas.end(); ++it)
     {
-        RectF rc(it->left, it->bottom, it->width(), it->height());
+        RectF rc(viewScale * (viewPos.X + it->left), viewScale * (viewPos.Y + it->bottom), viewScale * it->width(), viewScale * it->height());
         graphics.FillRectangle(&brush, rc);
     }
 }
@@ -668,7 +740,7 @@ VOID DrawStaticBush(Graphics& graphics)
     {
         const qtb::Bush* bush = it->second;
         const qtb::Area& area = bush->overall();
-        RectF rc(area.left, area.bottom, area.width(), area.height());
+        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
         Pen pen(drawData.GetBushRes(bush->id()).color);
         graphics.DrawRectangle(&pen, rc);
@@ -685,7 +757,7 @@ VOID DrawDynamicBush(Graphics& graphics)
     {
         const qtb::Bush* bush = it->second;
         const qtb::Area& area = bush->overall();
-        RectF rc(area.left, area.bottom, area.width(), area.height());
+        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
         SolidBrush brush(Color(128, 0, 192, 128));
         graphics.FillRectangle(&brush, rc);
@@ -700,7 +772,8 @@ VOID DrawRobot(Graphics& graphics)
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
         Pen pen(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
-        RectF rc(it->x()-2.5f, it->y()-2.5f, 5.0f, 5.0f);
+        qtb::Area area(it->x() - 1.0f, it->x() + 1.0f, it->y() - 1.0f, it->y() + 1.0f);
+        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
         if (it->getBrushGroupID() != -1)
         {
             SolidBrush brush(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
@@ -727,7 +800,7 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     const Color& color = drawData.GetZoneGenerationRes(it->second->zone()->generation()).color;
     SolidBrush solidBrush(Color(128, color.GetR(), color.GetG(), color.GetB()));
     const qtb::Area& area = it->second->overall();
-    RectF rc(area.left, area.bottom, area.width(), area.height());
+    RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
     graphics.FillRectangle(&solidBrush, rc);
 }
 
@@ -741,7 +814,7 @@ VOID DrawBushGroup(Graphics& graphics)
     {
         const qtb::BushGroup* bushGroup = it->second;
         const qtb::Area& area = bushGroup->overall();
-        RectF rc(area.left, area.bottom, area.width(), area.height());
+        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
         //Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
         Pen pen(drawData.GetBushGroupRes(it->second->id()).color);
@@ -772,24 +845,38 @@ VOID DrawTexts(Graphics& graphics)
 
     // Initialize arguments.
     Font myFont(L"Arial", 10);
-    SolidBrush blackBrush(Color(255, 64, 64, 64));
-    SolidBrush greyBrush(Color(255, 128, 128, 128));
+    SolidBrush blackBrush(Color(255, 0, 0, 0));
+    SolidBrush greyBrush(Color(255, 64, 64, 64));
 
     TCHAR string[64] = _T("");
 
+    // land
+    PointF origin(10.0f, 10.0f);
+    _sntprintf_s(string, 64, _T("land size: %d x %d"), (int)LAND_WIDTH, (int)LAND_HEIGHT);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("min zone: %d"), (int)MIN_ZONE_SIZE);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // static area count
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("static area: %d"), land->staticBushes().empty() ? 0 : STATIC_AREA_COUNT);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
     // static bush count
-    PointF origin(area.right + MIN_ZONE_SIZE, 0.0f);
-    _sntprintf_s(string, 64, _T("static bush: %d"), land->staticBushes().size());
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("static bush: %llu"), land->staticBushes().size());
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // dynamic bush count
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("dynamic bush: %d"), land->bushes().size());
+    _sntprintf_s(string, 64, _T("dynamic bush: %llu"), land->bushes().size());
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // bush group count
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("group: %d"), land->bushGroups().size());
+    _sntprintf_s(string, 64, _T("bush group: %llu"), land->bushGroups().size());
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // generate static bush
@@ -804,37 +891,59 @@ VOID DrawTexts(Graphics& graphics)
     // create dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("create bush time: %f"), dCreateBushTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("create bush time avg: %f"), dCreateBushTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // remove dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("remove bush time: %f"), dRemoveBushTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("remove bush time avg: %f"), dRemoveBushTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
-    // cursor cross
+    // cursor hit
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("hit time: %f"), dBushCrossTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("hit time avg: %f"), dBushCrossTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
+    // group in mouse
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("group in mouse: %d"), cursorBushGroupID);
     SolidBrush bushGroupBrush(drawData.GetBushGroupRes(cursorBushGroupID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
 
+    // bush in mouse
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("bush in mouse: %d"), cursorBushID);
     SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
+
+    // view scale
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("view scale: %f"), viewScale);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // view pos
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("view scale: %f"), viewScale);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("view pos: %f,%f"), viewPos.X, viewPos.Y);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // robot count
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("robot count: %llu"), bViewRobot ? robotList.size() : 0);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
 }

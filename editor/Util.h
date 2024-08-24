@@ -7,17 +7,20 @@
 const float PI = 3.14159265f;
 const float PI2 = PI * 2;
 
-PerfTool        perfTool;
+const float AREA_SIZE_MIN = 1.0f;
+const float AREA_SIZE_MAX = 5.0f;
 
-static int      nCreateBushCount = 0;
-static double   dCreateBushTime = 0;
-static double   dCreateBushTimeTotal = 0;
-static double   dCreateBushTimeAvg = 0;
+PerfTool    perfTool;
 
-static int      nRemoveBushCount = 0;
-static double   dRemoveBushTime = 0;
-static double   dRemoveBushTimeTotal = 0;
-static double   dRemoveBushTimeAvg = 0;
+int         nCreateBushCount = 0;
+double      dCreateBushTime = 0;
+double      dCreateBushTimeTotal = 0;
+double      dCreateBushTimeAvg = 0;
+
+int         nRemoveBushCount = 0;
+double      dRemoveBushTime = 0;
+double      dRemoveBushTimeTotal = 0;
+double      dRemoveBushTimeAvg = 0;
 
 int RangeRand(int min, int max)
 {
