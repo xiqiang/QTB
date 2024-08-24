@@ -22,6 +22,11 @@ double      dRemoveBushTime = 0;
 double      dRemoveBushTimeTotal = 0;
 double      dRemoveBushTimeAvg = 0;
 
+int         nBushCrossCount = 0;
+double      dBushCrossTime = 0;
+double      dBushCrossTimeTotal = 0;
+double      dBushCrossTimeAvg = 0;
+
 int RangeRand(int min, int max)
 {
     return rand() % (max - min) + min;
@@ -66,6 +71,20 @@ bool RemoveBush(qtb::Land* land, unsigned int bushID)
     dRemoveBushTimeAvg = dRemoveBushTimeTotal / nRemoveBushCount;
 
     return removed;
+}
+
+bool BushContains(qtb::Land* land, float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL)
+{
+    if (!land)
+        return false;
+
+    perfTool.Start();
+    land->bushContains(x, y, bushGroupID, bushID);
+    dBushCrossTime = perfTool.End();
+
+    dBushCrossTimeTotal += dBushCrossTime;
+    ++nBushCrossCount;
+    dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
 }
 
 #endif

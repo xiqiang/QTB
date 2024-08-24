@@ -89,11 +89,6 @@ double              dRebuildTime = 0;
 double              dRebuildTimeTotal = 0;
 double              dRebuildTimeAvg = 0;
 
-int                 nBushCrossCount = 0;
-double              dBushCrossTime = 0;
-double              dBushCrossTimeTotal = 0;
-double              dBushCrossTimeAvg = 0;
-
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -302,6 +297,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_VIEW_RESET:
                 {
                     ResetViewport(hWnd);
+                }
+                break;
+            case ID_VIEW_RESETAVG:
+                {
+                    nCreateBushCount = 0;
+                    dCreateBushTime = 0;
+                    dCreateBushTimeTotal = 0;
+                    dCreateBushTimeAvg = 0;
+
+                    nRemoveBushCount = 0;
+                    dRemoveBushTime = 0;
+                    dRemoveBushTimeTotal = 0;
+                    dRemoveBushTimeAvg = 0;
+
+                    nBushCrossCount = 0;
+                    dBushCrossTime = 0;
+                    dBushCrossTimeTotal = 0;
+                    dBushCrossTimeAvg = 0;
+
+                    nRebuildCount = 0;
+                    dRebuildTime = 0;
+                    dRebuildTimeTotal = 0;
+                    dRebuildTimeAvg = 0;
                 }
                 break;
             case ID_VIEW_QTREE:
@@ -627,14 +645,7 @@ VOID MouseBushHit()
 
     float x = cursorPos.X * (1 / viewScale) - viewPos.X;
     float y = cursorPos.Y * (1 / viewScale) - viewPos.Y;
-
-    perfTool.Start();
-    land->bushContains(x, y, &cursorBushGroupID, &cursorBushID);
-    dBushCrossTime = perfTool.End();
-
-    dBushCrossTimeTotal += dBushCrossTime;
-    ++nBushCrossCount;
-    dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+    BushContains(land, x, y, &cursorBushGroupID, &cursorBushID);
 }
 
 VOID RobotTick()
@@ -648,16 +659,10 @@ VOID RobotTick()
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
         it->Tick(land, GetTickCount64() / 1000.0f);
+
         unsigned int bushGroupID = -1;
-
-        perfTool.Start();
-        land->bushContains(it->x(), it->y(), &bushGroupID);
-        dBushCrossTime = perfTool.End();
-
-        dBushCrossTimeTotal += dBushCrossTime;
-        ++nBushCrossCount;
-        dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
-
+        unsigned int bushID = -1;
+        BushContains(land, it->x(), it->y(), &bushGroupID, &bushID);
         it->setBushGroupID(bushGroupID);
     }
 }
