@@ -78,13 +78,17 @@ bool BushContains(qtb::Land* land, float x, float y, unsigned int* bushGroupID =
     if (!land)
         return false;
 
+    bool ret = false;
+
     perfTool.Start();
-    land->bushContains(x, y, bushGroupID, bushID);
+    ret = land->bushContains(x, y, bushGroupID, bushID);
     dBushCrossTime = perfTool.End();
 
     dBushCrossTimeTotal += dBushCrossTime;
     ++nBushCrossCount;
     dBushCrossTimeAvg = dBushCrossTimeTotal / nBushCrossCount;
+
+    return ret;
 }
 
 #endif

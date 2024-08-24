@@ -74,6 +74,8 @@ float               viewScale = 1.0f;
 PointF              viewPosCache;
 PointF              viewPos;
 
+RectF               rcViewport;
+
 BOOL                bViewQTree = TRUE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
@@ -498,6 +500,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             cursorScalePos = scalePos;
         }
         break;
+    case WM_SIZE:
+        {
+            RECT rcClient;
+            GetClientRect(hWnd, &rcClient);
+            rcViewport.X = (float)rcClient.left;
+            rcViewport.Y = (float)rcClient.top;
+            rcViewport.Width = (float)(rcClient.right - rcClient.left);
+            rcViewport.Height = (float)(rcClient.bottom - rcClient.top);
+        }
+        break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -530,6 +542,11 @@ VOID ResetViewport(HWND hWnd)
 
     RECT rcClient;
     GetClientRect(hWnd, &rcClient);
+    rcViewport.X = (float)rcClient.left;
+    rcViewport.Y = (float)rcClient.top;
+    rcViewport.Width = (float)(rcClient.right - rcClient.left);
+    rcViewport.Height = (float)(rcClient.bottom - rcClient.top);
+
     viewPos.X = (1 / viewScale) * (rcClient.right - rcClient.left) * 0.5f - LAND_WIDTH * 0.5f;
     viewPos.Y = (1 / viewScale) * (rcClient.bottom - rcClient.top) * 0.5f - LAND_HEIGHT * 0.5f;
 }
@@ -733,6 +750,9 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
 
     const qtb::Area& area = tree->area();
     RectF rc(viewScale * (area.left + viewPos.X), viewScale * (area.bottom + viewPos.Y), viewScale * area.width(), viewScale * area.height());
+    if (!rcViewport.IntersectsWith(rc))
+        return;
+
     Pen pen(Color(32, 0, 128, 128));
     graphics.DrawRectangle(&pen, rc);
 
@@ -750,6 +770,10 @@ VOID DrawStaticAreas(Graphics& graphics)
     for (qtb::AreaList::const_iterator it = staticAreas.begin(); it != staticAreas.end(); ++it)
     {
         RectF rc(viewScale * (viewPos.X + it->left), viewScale * (viewPos.Y + it->bottom), viewScale * it->width(), viewScale * it->height());
+
+        if (!rcViewport.IntersectsWith(rc))
+            continue;
+
         graphics.FillRectangle(&brush, rc);
     }
 }
@@ -766,6 +790,9 @@ VOID DrawStaticBush(Graphics& graphics)
         const qtb::Area& area = bush->overall();
         RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
+        if (!rcViewport.IntersectsWith(rc))
+            continue;
+
         Pen pen(drawData.GetBushRes(bush->id()).color);
         graphics.DrawRectangle(&pen, rc);
     }
@@ -776,6 +803,8 @@ VOID DrawDynamicBush(Graphics& graphics)
     if (!land)
         return;
 
+    SolidBrush brush(Color(128, 0, 192, 128));
+
     const qtb::BushPMap& dynamicBush = land->bushes();
     for (qtb::BushPMap::const_iterator it = dynamicBush.begin(); it != dynamicBush.end(); ++it)
     {
@@ -783,7 +812,9 @@ VOID DrawDynamicBush(Graphics& graphics)
         const qtb::Area& area = bush->overall();
         RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
-        SolidBrush brush(Color(128, 0, 192, 128));
+        if (!rcViewport.IntersectsWith(rc))
+            continue;
+
         graphics.FillRectangle(&brush, rc);
 
         //Pen pen(drawData.GetBushRes(bush->id()).color);
@@ -795,9 +826,15 @@ VOID DrawRobot(Graphics& graphics)
 {
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
+        RectF rc(viewScale * (viewPos.X + it->x() - 1.0f),
+            viewScale * (viewPos.Y + it->y() - 1.0f),
+            viewScale * 2.0f, 
+            viewScale * 2.0f);
+
+        if (!rcViewport.IntersectsWith(rc))
+            continue;
+
         Pen pen(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
-        qtb::Area area(it->x() - 1.0f, it->x() + 1.0f, it->y() - 1.0f, it->y() + 1.0f);
-        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
         if (it->getBrushGroupID() != -1)
         {
             SolidBrush brush(drawData.GetBushGroupRes(it->getBrushGroupID()).color);
@@ -839,6 +876,9 @@ VOID DrawBushGroup(Graphics& graphics)
         const qtb::BushGroup* bushGroup = it->second;
         const qtb::Area& area = bushGroup->overall();
         RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
+
+        if (!rcViewport.IntersectsWith(rc))
+            continue;
 
         //Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
         Pen pen(drawData.GetBushGroupRes(it->second->id()).color);
