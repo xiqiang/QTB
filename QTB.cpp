@@ -68,7 +68,6 @@ unsigned int        cursorBushID = -1;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
-qtb::AreaList       staticAreas;
 
 float               viewScale = 1.0f;
 PointF              viewPosCache;
@@ -115,12 +114,9 @@ VOID                RobotTick();
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
 VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
-VOID                DrawStaticAreas(Graphics& graphics);
-VOID                DrawStaticBush(Graphics& graphics);
-VOID                DrawDynamicBush(Graphics& graphics);
+VOID                DrawBushes(Graphics& graphics);
 VOID                DrawRobot(Graphics& graphics);
 VOID                DrawSelectedBushGroup(Graphics& graphics);
-VOID                DrawBushGroup(Graphics& graphics);
 VOID                DrawMouseOperate(Graphics& graphics);
 VOID                DrawTexts(Graphics& graphics);
 
@@ -274,7 +270,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_LAND_CLEAR:
                 if (land)
                     land->clear();
-                staticAreas.clear();
                 bushIDList.clear();
                 break;
             case IDM_LAND_RANDOMSTATICBUSH:
@@ -600,7 +595,7 @@ VOID RandomStaticBush()
     if (!land)
         return;
 
-    staticAreas.clear();
+    qtb::AreaList staticAreas;
 
     for (int i = 0; i < STATIC_AREA_COUNT; ++i)
     {
@@ -724,18 +719,12 @@ VOID DrawMain(Graphics& graphics)
 
     if(bViewQTree)
         DrawQTree(graphics, land);
-    if(bViewStaticAreas)
-        DrawStaticAreas(graphics);
-    if (bViewStaticBush)
-        DrawStaticBush(graphics);
-    if (bViewDynamicBush)
-        DrawDynamicBush(graphics);
-    if (bViewRobot)
-        DrawRobot(graphics);
+    if (bViewStaticAreas || bViewStaticBush || bViewDynamicBush)
+        DrawBushes(graphics);
     if (bViewSelectedBushGroup)
         DrawSelectedBushGroup(graphics);
-    if (bViewBushGroup)
-        DrawBushGroup(graphics);
+    if (bViewRobot)
+        DrawRobot(graphics);
 
     DrawMouseOperate(graphics);
     DrawTexts(graphics);
@@ -764,62 +753,82 @@ VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
     }
 }
 
-VOID DrawStaticAreas(Graphics& graphics)
-{
-    SolidBrush brush(Color(128, 128, 192, 0));
-    for (qtb::AreaList::const_iterator it = staticAreas.begin(); it != staticAreas.end(); ++it)
-    {
-        RectF rc(viewScale * (viewPos.X + it->left), viewScale * (viewPos.Y + it->bottom), viewScale * it->width(), viewScale * it->height());
-
-        if (!rcViewport.IntersectsWith(rc))
-            continue;
-
-        graphics.FillRectangle(&brush, rc);
-    }
-}
-
-VOID DrawStaticBush(Graphics& graphics)
+VOID DrawBushes(Graphics& graphics)
 {
     if (!land)
         return;
 
-    const qtb::BushPMap& staticBush = land->staticBushes();
-    for (qtb::BushPMap::const_iterator it = staticBush.begin(); it != staticBush.end(); ++it)
+    qtb::Area area(
+        -viewPos.X,
+        rcViewport.Width * (1 / viewScale) - viewPos.X,
+        -viewPos.Y,
+        rcViewport.Height * (1 / viewScale) - viewPos.Y);
+
+    std::list<qtb::QTree*> tList;
+    land->layer(area, tList);
+
+    SolidBrush staticAreaBush(Color(128, 128, 192, 0));
+    SolidBrush staticBrush(Color(128, 0, 192, 128));
+
+    for (std::list<qtb::QTree*>::const_iterator itZone = tList.begin(); itZone != tList.end(); ++itZone)
     {
-        const qtb::Bush* bush = it->second;
-        const qtb::Area& area = bush->overall();
-        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
+        const qtb::Zone* zone = dynamic_cast<qtb::Zone*>(*itZone);
+        const qtb::BushGroupPMap& boundBushGroups = zone->boundBushGroups();
+        for (qtb::BushGroupPMap::const_iterator itGroup = boundBushGroups.begin(); itGroup != boundBushGroups.end(); ++itGroup)
+        {
+            const qtb::BushGroup* bushGroup = itGroup->second;
+            const qtb::Area& groupArea = bushGroup->overall();
+            RectF rcGroup(viewScale * (viewPos.X + groupArea.left), viewScale * (viewPos.Y + groupArea.bottom), viewScale * groupArea.width(), viewScale * groupArea.height());
+            if (!rcViewport.IntersectsWith(rcGroup))
+                continue;
 
-        if (!rcViewport.IntersectsWith(rc))
-            continue;
+            const qtb::BushPMap& bushes = bushGroup->bushes();
+            for (qtb::BushPMap::const_iterator itBush = bushes.begin(); itBush != bushes.end(); ++itBush)
+            {
+                const qtb::Bush* bush = itBush->second;
+                const qtb::Area& area = bush->overall();
+                RectF rcBush(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
 
-        Pen pen(drawData.GetBushRes(bush->id()).color);
-        graphics.DrawRectangle(&pen, rc);
+                if (!rcViewport.IntersectsWith(rcBush))
+                    continue;
+
+                if (bush->isStatic())
+                {
+                    if (bViewStaticAreas)
+                    {
+                        const qtb::AreaList& areaList = bush->areas();
+                        for (qtb::AreaList::const_iterator itArea = areaList.begin(); itArea != areaList.end(); ++itArea)
+                        {
+                            RectF rcArea(viewScale * (viewPos.X + itArea->left), viewScale * (viewPos.Y + itArea->bottom), viewScale * itArea->width(), viewScale * itArea->height());
+                            if (rcViewport.IntersectsWith(rcArea))
+                                graphics.FillRectangle(&staticAreaBush, rcArea);
+                        }
+                    }
+
+                    if (bViewStaticBush)
+                    {
+                        Pen pen(drawData.GetBushRes(bush->id()).color);
+                        graphics.DrawRectangle(&pen, rcBush);
+                    }
+                }
+                else
+                {
+                    if (bViewDynamicBush)
+                    {
+                        graphics.FillRectangle(&staticBrush, rcBush);
+                    }
+
+                }
+            }
+
+            if (bViewBushGroup)
+            {
+                Pen pen(drawData.GetBushGroupRes(itGroup->second->id()).color);
+                graphics.DrawRectangle(&pen, rcGroup);
+            }
+        }
     }
-}
 
-VOID DrawDynamicBush(Graphics& graphics)
-{
-    if (!land)
-        return;
-
-    SolidBrush brush(Color(128, 0, 192, 128));
-
-    const qtb::BushPMap& dynamicBush = land->bushes();
-    for (qtb::BushPMap::const_iterator it = dynamicBush.begin(); it != dynamicBush.end(); ++it)
-    {
-        const qtb::Bush* bush = it->second;
-        const qtb::Area& area = bush->overall();
-        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
-
-        if (!rcViewport.IntersectsWith(rc))
-            continue;
-
-        graphics.FillRectangle(&brush, rc);
-
-        //Pen pen(drawData.GetBushRes(bush->id()).color);
-        //graphics.DrawRectangle(&pen, rc);
-    }
 }
 
 VOID DrawRobot(Graphics& graphics)
@@ -863,27 +872,6 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     const qtb::Area& area = it->second->overall();
     RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
     graphics.FillRectangle(&solidBrush, rc);
-}
-
-VOID DrawBushGroup(Graphics& graphics)
-{
-    if (!land)
-        return;
-
-    const qtb::BushGroupPMap& bushGroupMap = land->bushGroups();
-    for (qtb::BushGroupPMap::const_iterator it = bushGroupMap.begin(); it != bushGroupMap.end(); ++it)
-    {
-        const qtb::BushGroup* bushGroup = it->second;
-        const qtb::Area& area = bushGroup->overall();
-        RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
-
-        if (!rcViewport.IntersectsWith(rc))
-            continue;
-
-        //Pen pen(drawData.GetZoneGenerationRes(bushGroup->zone()->generation()).color);
-        Pen pen(drawData.GetBushGroupRes(it->second->id()).color);
-        graphics.DrawRectangle(&pen, rc);
-    }
 }
 
 VOID DrawMouseOperate(Graphics& graphics)

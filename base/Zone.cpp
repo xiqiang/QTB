@@ -28,22 +28,22 @@ namespace qtb
 		return false;
 	}
 
-	void Zone::addBushGroup(BushGroup* group)
+	void Zone::bindBushGroup(BushGroup* group)
 	{
 		assert(group);
 		assert(NULL == group->m_zone);
 
 		group->m_zone = this;
-		assert(m_bushGroups.find(group->id()) == m_bushGroups.end());
-		m_bushGroups[group->id()] = group;
+		assert(m_boundBushGroups.find(group->id()) == m_boundBushGroups.end());
+		m_boundBushGroups[group->id()] = group;
 	}
 
-	void Zone::removeBushGroup(unsigned int groupID)
+	void Zone::unbindBushGroup(unsigned int groupID)
 	{
-		BushGroupPMap::iterator it = m_bushGroups.find(groupID);
-		assert(it != m_bushGroups.end());
+		BushGroupPMap::iterator it = m_boundBushGroups.find(groupID);
+		assert(it != m_boundBushGroups.end());
 		it->second->m_zone = NULL;
-		m_bushGroups.erase(groupID);
+		m_boundBushGroups.erase(groupID);
 	}
 
 	bool Zone::_bushContains(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/) const
@@ -51,7 +51,7 @@ namespace qtb
 		if (!m_area.contains(x, y))
 			return false;
 
-		for (BushGroupPMap::const_iterator it = m_bushGroups.begin(); it != m_bushGroups.end(); ++it) {
+		for (BushGroupPMap::const_iterator it = m_boundBushGroups.begin(); it != m_boundBushGroups.end(); ++it) {
 			BushGroup* group = it->second;
 			assert(group);
 

@@ -92,6 +92,7 @@ namespace qtb
 			if (collisions.empty())
 			{
 				Bush* bush = new Bush(m_nextBushID++);
+				bush->m_isStatic = true;
 				bushMap[bush->id()] = bush;
 				bush->add(*itArea);
 			}
@@ -125,7 +126,7 @@ namespace qtb
 			Zone* zone = dynamic_cast<Zone*>(*itTree);
 			assert(zone);
 
-			const BushGroupPMap& resideBushGroupMap = zone->bushGroups();
+			const BushGroupPMap& resideBushGroupMap = zone->boundBushGroups();
 			for (BushGroupPMap::const_iterator itGroup = resideBushGroupMap.begin(); itGroup != resideBushGroupMap.end(); ++itGroup)
 			{
 				if (itGroup->second->overlap(*(bush)))
@@ -145,7 +146,7 @@ namespace qtb
 		{
 			BushGroup* group = m_bushGroups[collisions[0]];
 			assert(group->m_zone);
-			group->m_zone->removeBushGroup(collisions[0]);
+			group->m_zone->unbindBushGroup(collisions[0]);
 			group->add(bush);
 
 			for (size_t i = 1; i < collisions.size(); ++i)
@@ -155,7 +156,7 @@ namespace qtb
 				group->splice(*spliceGroup);
 
 				assert(spliceGroup->zone());
-				spliceGroup->m_zone->removeBushGroup(collisions[i]);
+				spliceGroup->m_zone->unbindBushGroup(collisions[i]);
 
 				m_bushGroups.erase(collisions[i]);
 				delete spliceGroup;
@@ -171,7 +172,7 @@ namespace qtb
 		assert(group->zone() == NULL);
 		Zone* zone = dynamic_cast<Zone*>(locate(group->overall()));
 		assert(zone);
-		zone->addBushGroup(group);
+		zone->bindBushGroup(group);
 	}
 
 	void Land::recycleBushGroup(BushGroup* group)
@@ -180,7 +181,7 @@ namespace qtb
 		assert(m_bushGroups.find(group->id()) != m_bushGroups.end());
 
 		assert(group->m_zone);
-		group->m_zone->removeBushGroup(group->id());
+		group->m_zone->unbindBushGroup(group->id());
 
 		BushGroupPMap groupMap;
 		const BushPMap& bushMap = group->bushes();
@@ -241,7 +242,7 @@ namespace qtb
 			BushGroup* group = it->second;
 			assert(group);
 			if (group->m_zone)
-				group->m_zone->removeBushGroup(group->id());
+				group->m_zone->unbindBushGroup(group->id());
 			delete group;
 		}
 		m_bushGroups.clear();

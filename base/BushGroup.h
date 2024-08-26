@@ -19,7 +19,7 @@ namespace qtb
 	public:
 		unsigned int	id() const { return m_id; }
 		const Area&		overall() const { return m_overall; }
-		const BushPMap&	bushes() { return m_bushes; }
+		const BushPMap&	bushes() const { return m_bushes; }
 		const Zone*		zone() const { return m_zone; }
 
 		bool			overlap(const Bush& bush) const;

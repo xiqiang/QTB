@@ -7,6 +7,7 @@ namespace qtb
 	Bush::Bush(unsigned int id)
 		: m_id(id)
 		, m_group(NULL)
+		, m_isStatic(false)
 	{		
 	}
 

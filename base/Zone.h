@@ -17,19 +17,20 @@ namespace qtb
 
 	public:
 		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
+		const BushGroupPMap&	boundBushGroups() const { return m_boundBushGroups; }
 
 	protected:
 		virtual QTree*			newChild(const Area& area);
 
 	private:
-		void					addBushGroup(BushGroup* group);
-		void					removeBushGroup(unsigned int groupID);
-		const BushGroupPMap&	bushGroups() const { return m_bushGroups; }
+		void					bindBushGroup(BushGroup* group);
+		void					unbindBushGroup(unsigned int groupID);
 
+	private:
 		bool					_bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL) const;
 
 	private:
-		BushGroupPMap	m_bushGroups;
+		BushGroupPMap			m_boundBushGroups;
 	};
 }
 

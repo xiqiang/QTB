@@ -20,7 +20,10 @@ namespace qtb
 	public:
 		unsigned int		id() const { return m_id; }
 		const Area&			overall() const { return m_overall; }
+		bool				isStatic() const { return m_isStatic; }
+
 		const BushGroup*	group() const { return m_group; }
+		const AreaList&		areas() const { return m_areaList; }
 
 		bool				overlap(const Bush& other) const;
 		bool				overlap(const Area& area) const;
@@ -33,10 +36,9 @@ namespace qtb
 	private:
 		unsigned int		m_id;
 		BushGroup*			m_group;
-
-	private:
 		AreaList			m_areaList;
 		Area				m_overall;
+		bool				m_isStatic;
 	};
 
 	typedef std::list<Bush*>				BushPList;
