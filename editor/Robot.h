@@ -5,14 +5,14 @@
 #include "../base/Land.h"
 #include "Util.h"
 
-const float MOVE_TIME_MIN = 3.0f;
+const float MOVE_TIME_MIN = 2.0f;
 const float MOVE_TIME_MAX = 5.0f;
 
 const float BUSH_TIME_MIN = 1.0f;
 const float BUSH_TIME_MAX = 3.0f;
 
-const float ROBOT_SPEED_MIN = 5.0f;
-const float ROBOT_SPEED_MAX = 15.0f;
+const float ROBOT_SPEED_MIN = 2.0f;
+const float ROBOT_SPEED_MAX = 10.0f;
 
 const float BUSH_LIVE_MIN = 5.0f;
 const float BUSH_LIVE_MAX = 10.0f;
