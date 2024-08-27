@@ -50,8 +50,21 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
 
+DrawData            drawData;
+qtb::Land*          land = NULL;
+
 std::list<Robot>        robotList;
 std::list<unsigned int> bushIDList;
+
+RECT                rcClient;
+RectF               rcViewport;
+float               viewportScale = 0.7f;
+
+float               viewZoom = 1.0f;
+PointF              viewPosCache;
+PointF              viewPos;
+
+size_t              visibleZone = 0;
 
 BOOL                bLMouseDown = FALSE;
 BOOL                bRMouseDown = FALSE;
@@ -62,18 +75,8 @@ Point               mouseDownPosM;
 Point               mouseUpPosM;
 Point               cursorPos;
 PointF              cursorScalePos;
-
 unsigned int        cursorBushGroupID = -1;
 unsigned int        cursorBushID = -1;
-
-DrawData            drawData;
-qtb::Land*          land = NULL;
-
-float               viewScale = 1.0f;
-PointF              viewPosCache;
-PointF              viewPos;
-
-RectF               rcViewport;
 
 BOOL                bViewQTree = TRUE;
 BOOL                bViewStaticAreas = TRUE;
@@ -81,7 +84,6 @@ BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
 BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
-
 BOOL                bViewRobot = TRUE;
 BOOL                bRobotAutoBush = TRUE;
 
@@ -97,6 +99,7 @@ VOID                TermInstance(HINSTANCE);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+VOID                UpdateViewportRect(HWND hWnd);
 VOID                ResetViewport(HWND hWnd);
 
 VOID                InitLand();
@@ -113,11 +116,11 @@ VOID                RobotTick();
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
-VOID                DrawQTree(Graphics& graphics, qtb::QTree* tree);
-VOID                DrawBushes(Graphics& graphics);
+VOID                DrawZones(Graphics& graphics);
 VOID                DrawRobot(Graphics& graphics);
 VOID                DrawSelectedBushGroup(Graphics& graphics);
 VOID                DrawMouseOperate(Graphics& graphics);
+VOID                DrawMask(Graphics& graphics);
 VOID                DrawTexts(Graphics& graphics);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -413,10 +416,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 GetMouseArea(area);
                 if (area.width() > 1 && area.height() > 1)
                 {
-                    area.left = area.left * (1 / viewScale) - viewPos.X;
-                    area.bottom = area.bottom * (1 / viewScale) - viewPos.Y;
-                    area.right = area.right * (1 / viewScale) - viewPos.X;
-                    area.top = area.top * (1 / viewScale) - viewPos.Y;
+                    area.left = area.left * (1 / viewZoom) - viewPos.X;
+                    area.bottom = area.bottom * (1 / viewZoom) - viewPos.Y;
+                    area.right = area.right * (1 / viewZoom) - viewPos.X;
+                    area.top = area.top * (1 / viewZoom) - viewPos.Y;
 
                     unsigned int bushID = CreateBush(land, area);
                     bushIDList.push_back(bushID);
@@ -473,36 +476,41 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             if (bMMouseDown)
             {
-                viewPos.X = viewPosCache.X + (1 / viewScale) * (cursorPos.X - mouseDownPosM.X);
-                viewPos.Y = viewPosCache.Y + (1 / viewScale) * (cursorPos.Y - mouseDownPosM.Y);
+                viewPos.X = viewPosCache.X + (1 / viewZoom) * (cursorPos.X - mouseDownPosM.X);
+                viewPos.Y = viewPosCache.Y + (1 / viewZoom) * (cursorPos.Y - mouseDownPosM.Y);
             }
 
-            cursorScalePos.X = (1 / viewScale) * cursorPos.X;
-            cursorScalePos.Y = (1 / viewScale) * cursorPos.Y;
+            cursorScalePos.X = (1 / viewZoom) * cursorPos.X;
+            cursorScalePos.Y = (1 / viewZoom) * cursorPos.Y;
         }
         break;
     case WM_MOUSEWHEEL:
         {
-            INT zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-            viewScale += (float)zDelta / WHEEL_DELTA * 0.2f;
+            short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+            WORD fwKeys = GET_KEYSTATE_WPARAM(wParam);
 
-            PointF scalePos;
-            scalePos.X = (1 / viewScale) * cursorPos.X;
-            scalePos.Y = (1 / viewScale) * cursorPos.Y;
+            if (fwKeys & MK_CONTROL)
+            {
+                viewportScale += (float)zDelta / WHEEL_DELTA * 0.01f;
+                UpdateViewportRect(hWnd);
+            }
+            else
+            {
+                viewZoom += (float)zDelta / WHEEL_DELTA * 0.2f;
 
-            viewPos.X += scalePos.X - cursorScalePos.X;
-            viewPos.Y += scalePos.Y - cursorScalePos.Y;
-            cursorScalePos = scalePos;
+                PointF scalePos;
+                scalePos.X = (1 / viewZoom) * cursorPos.X;
+                scalePos.Y = (1 / viewZoom) * cursorPos.Y;
+
+                viewPos.X += scalePos.X - cursorScalePos.X;
+                viewPos.Y += scalePos.Y - cursorScalePos.Y;
+                cursorScalePos = scalePos;
+            }
         }
         break;
     case WM_SIZE:
         {
-            RECT rcClient;
-            GetClientRect(hWnd, &rcClient);
-            rcViewport.X = (float)rcClient.left;
-            rcViewport.Y = (float)rcClient.top;
-            rcViewport.Width = (float)(rcClient.right - rcClient.left);
-            rcViewport.Height = (float)(rcClient.bottom - rcClient.top);
+            UpdateViewportRect(hWnd);
         }
         break;
     default:
@@ -531,19 +539,26 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+VOID UpdateViewportRect(HWND hWnd)
+{
+    GetClientRect(hWnd, &rcClient);
+    INT clientWidth = (rcClient.right - rcClient.left);
+    INT clientHeight = rcClient.bottom - rcClient.top;
+    float viewWidth = clientWidth * viewportScale;
+    float viewHeight = clientHeight * viewportScale;
+
+    rcViewport.X = rcClient.left + (clientWidth - viewWidth) * 0.5f;
+    rcViewport.Y = rcClient.top + (clientHeight - viewHeight) * 0.5f;
+    rcViewport.Width = viewWidth;
+    rcViewport.Height = viewHeight;
+}
+
 VOID ResetViewport(HWND hWnd)
 {
-    viewScale = 3.0f;
-
-    RECT rcClient;
-    GetClientRect(hWnd, &rcClient);
-    rcViewport.X = (float)rcClient.left;
-    rcViewport.Y = (float)rcClient.top;
-    rcViewport.Width = (float)(rcClient.right - rcClient.left);
-    rcViewport.Height = (float)(rcClient.bottom - rcClient.top);
-
-    viewPos.X = (1 / viewScale) * (rcClient.right - rcClient.left) * 0.5f - LAND_WIDTH * 0.5f;
-    viewPos.Y = (1 / viewScale) * (rcClient.bottom - rcClient.top) * 0.5f - LAND_HEIGHT * 0.5f;
+    UpdateViewportRect(hWnd);
+    viewZoom = 3.0f;
+    viewPos.X = (1 / viewZoom) * (rcViewport.X + rcViewport.Width * 0.5f) - LAND_WIDTH * 0.5f;
+    viewPos.Y = (1 / viewZoom) * (rcViewport.Y + rcViewport.Height * 0.5f) - LAND_HEIGHT * 0.5f;
 }
 
 VOID InitLand()
@@ -655,8 +670,8 @@ VOID MouseBushHit()
     cursorBushGroupID = -1;
     cursorBushID = -1;
 
-    float x = cursorPos.X * (1 / viewScale) - viewPos.X;
-    float y = cursorPos.Y * (1 / viewScale) - viewPos.Y;
+    float x = cursorPos.X * (1 / viewZoom) - viewPos.X;
+    float y = cursorPos.Y * (1 / viewZoom) - viewPos.Y;
     BushContains(land, x, y, &cursorBushGroupID, &cursorBushID);
 }
 
@@ -684,8 +699,7 @@ VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
     if (!land)
         return;
     
-    RECT rc;
-    GetClientRect(hWnd, &rc);
+    const RECT& rc = rcClient;
 
     // ready
     HDC hdcMem = CreateCompatibleDC(ps->hdc);
@@ -717,68 +731,53 @@ VOID DrawMain(Graphics& graphics)
     if (!land)
         return;
 
-    if(bViewQTree)
-        DrawQTree(graphics, land);
-    if (bViewStaticAreas || bViewStaticBush || bViewDynamicBush)
-        DrawBushes(graphics);
+    DrawZones(graphics);
     if (bViewSelectedBushGroup)
         DrawSelectedBushGroup(graphics);
     if (bViewRobot)
         DrawRobot(graphics);
 
     DrawMouseOperate(graphics);
+    DrawMask(graphics);
     DrawTexts(graphics);
 }
 
-VOID DrawQTree(Graphics& graphics, qtb::QTree* tree)
-{
-    if (!land)
-        return;
-
-    assert(tree);
-
-    const qtb::Area& area = tree->area();
-    RectF rc(viewScale * (area.left + viewPos.X), viewScale * (area.bottom + viewPos.Y), viewScale * area.width(), viewScale * area.height());
-    if (!rcViewport.IntersectsWith(rc))
-        return;
-
-    Pen pen(Color(32, 0, 128, 128));
-    graphics.DrawRectangle(&pen, rc);
-
-    for (int i = 0; i < qtb::QTree::CHILD_COUNT; ++i)
-    {
-        qtb::QTree* c = tree->child(i);
-        if (c)
-            DrawQTree(graphics, c);
-    }
-}
-
-VOID DrawBushes(Graphics& graphics)
+VOID DrawZones(Graphics& graphics)
 {
     if (!land)
         return;
 
     qtb::Area area(
-        -viewPos.X,
-        rcViewport.Width * (1 / viewScale) - viewPos.X,
-        -viewPos.Y,
-        rcViewport.Height * (1 / viewScale) - viewPos.Y);
+        rcViewport.X * (1 / viewZoom) - viewPos.X,
+        (rcViewport.X + rcViewport.Width) * (1 / viewZoom) - viewPos.X,
+        rcViewport.Y * (1 / viewZoom) - viewPos.Y,
+        (rcViewport.Y + rcViewport.Height) * (1 / viewZoom) - viewPos.Y);
 
     std::list<qtb::QTree*> tList;
     land->layer(area, tList);
+    visibleZone = tList.size();
 
+    Pen treePen(Color(32, 0, 128, 128));
     SolidBrush staticAreaBush(Color(128, 128, 192, 0));
     SolidBrush staticBrush(Color(128, 0, 192, 128));
 
     for (std::list<qtb::QTree*>::const_iterator itZone = tList.begin(); itZone != tList.end(); ++itZone)
     {
         const qtb::Zone* zone = dynamic_cast<qtb::Zone*>(*itZone);
+
+        if (bViewQTree)
+        {
+            const qtb::Area& areaTree = zone->area();
+            RectF rcTree(viewZoom * (areaTree.left + viewPos.X), viewZoom * (areaTree.bottom + viewPos.Y), viewZoom * areaTree.width(), viewZoom * areaTree.height());
+            graphics.DrawRectangle(&treePen, rcTree);
+        }
+
         const qtb::BushGroupPMap& boundBushGroups = zone->boundBushGroups();
         for (qtb::BushGroupPMap::const_iterator itGroup = boundBushGroups.begin(); itGroup != boundBushGroups.end(); ++itGroup)
         {
             const qtb::BushGroup* bushGroup = itGroup->second;
             const qtb::Area& groupArea = bushGroup->overall();
-            RectF rcGroup(viewScale * (viewPos.X + groupArea.left), viewScale * (viewPos.Y + groupArea.bottom), viewScale * groupArea.width(), viewScale * groupArea.height());
+            RectF rcGroup(viewZoom * (viewPos.X + groupArea.left), viewZoom * (viewPos.Y + groupArea.bottom), viewZoom * groupArea.width(), viewZoom * groupArea.height());
             if (!rcViewport.IntersectsWith(rcGroup))
                 continue;
 
@@ -787,7 +786,7 @@ VOID DrawBushes(Graphics& graphics)
             {
                 const qtb::Bush* bush = itBush->second;
                 const qtb::Area& area = bush->overall();
-                RectF rcBush(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
+                RectF rcBush(viewZoom * (viewPos.X + area.left), viewZoom * (viewPos.Y + area.bottom), viewZoom * area.width(), viewZoom * area.height());
 
                 if (!rcViewport.IntersectsWith(rcBush))
                     continue;
@@ -799,7 +798,7 @@ VOID DrawBushes(Graphics& graphics)
                         const qtb::AreaList& areaList = bush->areas();
                         for (qtb::AreaList::const_iterator itArea = areaList.begin(); itArea != areaList.end(); ++itArea)
                         {
-                            RectF rcArea(viewScale * (viewPos.X + itArea->left), viewScale * (viewPos.Y + itArea->bottom), viewScale * itArea->width(), viewScale * itArea->height());
+                            RectF rcArea(viewZoom * (viewPos.X + itArea->left), viewZoom * (viewPos.Y + itArea->bottom), viewZoom * itArea->width(), viewZoom * itArea->height());
                             if (rcViewport.IntersectsWith(rcArea))
                                 graphics.FillRectangle(&staticAreaBush, rcArea);
                         }
@@ -835,10 +834,10 @@ VOID DrawRobot(Graphics& graphics)
 {
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
-        RectF rc(viewScale * (viewPos.X + it->x() - 1.0f),
-            viewScale * (viewPos.Y + it->y() - 1.0f),
-            viewScale * 2.0f, 
-            viewScale * 2.0f);
+        RectF rc(viewZoom * (viewPos.X + it->x() - 1.0f),
+            viewZoom * (viewPos.Y + it->y() - 1.0f),
+            viewZoom * 2.0f, 
+            viewZoom * 2.0f);
 
         if (!rcViewport.IntersectsWith(rc))
             continue;
@@ -870,21 +869,34 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     const Color& color = drawData.GetZoneGenerationRes(it->second->zone()->generation()).color;
     SolidBrush solidBrush(Color(128, color.GetR(), color.GetG(), color.GetB()));
     const qtb::Area& area = it->second->overall();
-    RectF rc(viewScale * (viewPos.X + area.left), viewScale * (viewPos.Y + area.bottom), viewScale * area.width(), viewScale * area.height());
+    RectF rc(viewZoom * (viewPos.X + area.left), viewZoom * (viewPos.Y + area.bottom), viewZoom * area.width(), viewZoom * area.height());
     graphics.FillRectangle(&solidBrush, rc);
 }
 
 VOID DrawMouseOperate(Graphics& graphics)
 {
-    if (bLMouseDown)
-    {
-        qtb::Area area;
-        GetMouseArea(area);
+    if (!bLMouseDown)
+        return;
 
-        Pen pen(Color(192, 128, 128, 128));
-        RectF rc(area.left, area.bottom, area.width(), area.height());
-        graphics.DrawRectangle(&pen, rc);
-    }
+    qtb::Area area;
+    GetMouseArea(area);
+
+    Pen pen(Color(192, 128, 128, 128));
+    RectF rc(area.left, area.bottom, area.width(), area.height());
+    graphics.DrawRectangle(&pen, rc);
+}
+
+VOID DrawMask(Graphics& graphics)
+{
+    SolidBrush frameBrush(Color(64, 128, 128, 128));
+    RectF rcTop((float)rcClient.left, (float)rcClient.top, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
+    graphics.FillRectangle(&frameBrush, rcTop);
+    RectF rcBottom((float)rcClient.left, rcViewport.Y + rcViewport.Height, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
+    graphics.FillRectangle(&frameBrush, rcBottom);
+    RectF rcLeft((float)rcClient.left, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
+    graphics.FillRectangle(&frameBrush, rcLeft);
+    RectF rcRight(rcViewport.X + rcViewport.Width, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
+    graphics.FillRectangle(&frameBrush, rcRight);
 }
 
 VOID DrawTexts(Graphics& graphics)
@@ -908,7 +920,15 @@ VOID DrawTexts(Graphics& graphics)
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("min zone: %d"), (int)MIN_ZONE_SIZE);
+    _sntprintf_s(string, 64, _T("min zone size: %d"), (int)MIN_ZONE_SIZE);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+#ifdef _WIN64
+    _sntprintf_s(string, 64, _T("visible zone: %llu"), visibleZone);
+#else
+    _sntprintf_s(string, 64, _T("visible zone: %u"), visibleZone);
+#endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // static area count
@@ -993,7 +1013,7 @@ VOID DrawTexts(Graphics& graphics)
 
     // view scale
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("view scale: %.2f"), viewScale);
+    _sntprintf_s(string, 64, _T("view scale: %.2f"), viewZoom);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // view pos

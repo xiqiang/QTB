@@ -35,7 +35,7 @@ namespace qtb
 		}
 
 	public:
-		const Area& area() { return m_area; }
+		const Area& area() const { return m_area; }
 		unsigned int generation() const { return m_generation; }
 
 		void devide(float minSize) {
