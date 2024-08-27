@@ -28,14 +28,14 @@ using namespace Gdiplus;
 #ifdef _DEBUG
 const float LAND_WIDTH = 1000.0f;
 const float LAND_HEIGHT = 1000.0f;
-const float MIN_ZONE_SIZE = 30.0f;
+const float MIN_ZONE_SIZE = 10.0f;
 const int   STATIC_AREA_COUNT = 5000;
 const int   DYNAMIC_AREA_COUNT = 2500;
 const int   ROBOT_COUNT = 1000;
 #else
 const float LAND_WIDTH              = 2000.0f;
 const float LAND_HEIGHT             = 2000.0f;
-const float MIN_ZONE_SIZE           = 30.0f;
+const float MIN_ZONE_SIZE           = 10.0f;
 const int   STATIC_AREA_COUNT       = 20000;
 const int   DYNAMIC_AREA_COUNT      = 10000;
 const int   ROBOT_COUNT             = 5000;
@@ -492,11 +492,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (fwKeys & MK_CONTROL)
             {
                 viewportScale += (float)zDelta / WHEEL_DELTA * 0.01f;
+                viewportScale = max(0.000001f, viewportScale);
                 UpdateViewportRect(hWnd);
             }
             else
             {
                 viewZoom += (float)zDelta / WHEEL_DELTA * 0.2f;
+                viewZoom = max(0.000001f, viewZoom);
 
                 PointF scalePos;
                 scalePos.X = (1 / viewZoom) * cursorPos.X;
@@ -555,7 +557,9 @@ VOID UpdateViewportRect(HWND hWnd)
 
 VOID ResetViewport(HWND hWnd)
 {
+    viewportScale = 0.7f;
     UpdateViewportRect(hWnd);
+
     viewZoom = 3.0f;
     viewPos.X = (1 / viewZoom) * (rcViewport.X + rcViewport.Width * 0.5f) - LAND_WIDTH * 0.5f;
     viewPos.Y = (1 / viewZoom) * (rcViewport.Y + rcViewport.Height * 0.5f) - LAND_HEIGHT * 0.5f;
@@ -816,7 +820,6 @@ VOID DrawZones(Graphics& graphics)
                     {
                         graphics.FillRectangle(&staticBrush, rcBush);
                     }
-
                 }
             }
 
