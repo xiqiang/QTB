@@ -82,8 +82,10 @@ BOOL                bViewQTree = TRUE;
 BOOL                bViewStaticAreas = TRUE;
 BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
-BOOL                bViewSelectedBushGroup = TRUE;
 BOOL                bViewBushGroup = FALSE;
+BOOL                bViewSelectedBushGroup = TRUE;
+
+BOOL                bEnableRobot = TRUE;
 BOOL                bViewRobot = TRUE;
 BOOL                bRobotAutoBush = TRUE;
 
@@ -362,6 +364,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     bViewBushGroup = !bViewBushGroup;
                     UINT check = bViewBushGroup ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_BUSHGROUP, MF_BYCOMMAND | check);
+                }
+                break;
+            case ID_ENABLE_ROBOT:
+                {
+                    bEnableRobot = !bEnableRobot;
+                    UINT check = bEnableRobot ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_ENABLE_ROBOT, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_ROBOT:
@@ -656,7 +665,6 @@ VOID OnUpdate()
 {
     float appTime = GetTickCount64() / 1000.0f;
 
-    MouseBushHit();
     RobotTick(appTime);
 
     if (appTime - lastFrameTime < 1.0f)
@@ -697,7 +705,7 @@ VOID RobotTick(float appTime)
     if (!land)
         return;
 
-    if (!bViewRobot)
+    if (!bEnableRobot)
         return;
 
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
@@ -749,8 +757,10 @@ VOID DrawMain(Graphics& graphics)
         return;
 
     DrawZones(graphics);
+
     if (bViewSelectedBushGroup)
         DrawSelectedBushGroup(graphics);
+
     if (bViewRobot)
         DrawRobot(graphics);
 
@@ -763,6 +773,15 @@ VOID DrawZones(Graphics& graphics)
 {
     if (!land)
         return;
+
+    if (!bViewQTree
+        && !bViewStaticAreas
+        && !bViewStaticBush
+        && !bViewDynamicBush
+        && !bViewBushGroup)
+    {
+        return;
+    }
 
     qtb::Area area(
         rcViewport.X * (1 / viewZoom) - viewPos.X,
@@ -1050,9 +1069,9 @@ VOID DrawTexts(Graphics& graphics)
     // robot count
     origin = origin + PointF(0.0f, 30.0f);
 #ifdef _WIN64
-    _sntprintf_s(string, 64, _T("robot count: %llu"), bViewRobot ? robotList.size() : 0);
+    _sntprintf_s(string, 64, _T("robot count: %llu"), robotList.size());
 #else
-    _sntprintf_s(string, 64, _T("robot count: %u"), bViewRobot ? robotList.size() : 0);
+    _sntprintf_s(string, 64, _T("robot count: %u"), robotList.size());
 #endif
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
