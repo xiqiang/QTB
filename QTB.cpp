@@ -112,7 +112,7 @@ VOID                RandomDynamicBush();
 VOID                OnUpdate();
 VOID                GetMouseArea(qtb::Area& area);
 VOID                MouseBushHit();
-VOID                RobotTick();
+VOID                RobotTick(float appTime);
 
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
 VOID                DrawMain(Graphics& graphics);
@@ -654,8 +654,21 @@ VOID RandomDynamicBush()
 
 VOID OnUpdate()
 {
+    float appTime = GetTickCount64() / 1000.0f;
+
     MouseBushHit();
-    RobotTick();
+    RobotTick(appTime);
+
+    if (appTime - lastFrameTime < 1.0f)
+    {
+        ++frameCount;
+    }
+    else
+    {
+        fps = frameCount;
+        frameCount = 0;
+        lastFrameTime = appTime;
+    }
 }
 
 VOID GetMouseArea(qtb::Area& area)
@@ -679,7 +692,7 @@ VOID MouseBushHit()
     BushContains(land, x, y, &cursorBushGroupID, &cursorBushID);
 }
 
-VOID RobotTick()
+VOID RobotTick(float appTime)
 {
     if (!land)
         return;
@@ -689,7 +702,7 @@ VOID RobotTick()
 
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
-        it->Tick(land, GetTickCount64() / 1000.0f);
+        it->Tick(land, appTime);
 
         unsigned int bushGroupID = -1;
         unsigned int bushID = -1;
@@ -917,8 +930,13 @@ VOID DrawTexts(Graphics& graphics)
 
     TCHAR string[64] = _T("");
 
-    // land
+    // fps
     PointF origin(10.0f, 10.0f);
+    _sntprintf_s(string, 64, _T("fps: %d"), fps);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // land
+    origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("land size: %d x %d"), (int)LAND_WIDTH, (int)LAND_HEIGHT);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
@@ -932,6 +950,21 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("visible zone: %u"), visibleZone);
 #endif
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // view size
+    origin = origin + PointF(0.0f, 30.0f);
+    _sntprintf_s(string, 64, _T("view size: %.2f,%.2f"), rcViewport.Width / viewZoom, rcViewport.Height / viewZoom);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // view pos
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    // view scale
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("view zoom: %.2f"), viewZoom);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // static area count
@@ -969,11 +1002,11 @@ VOID DrawTexts(Graphics& graphics)
     // generate static bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("rebuild time: %f"), dRebuildTime);
-    graphics.DrawString( string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("rebuild time avg: %f"), dRebuildTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // create dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
@@ -1013,16 +1046,6 @@ VOID DrawTexts(Graphics& graphics)
     _sntprintf_s(string, 64, _T("bush in mouse: %d"), cursorBushID);
     SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
     graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
-
-    // view scale
-    origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("view scale: %.2f"), viewZoom);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // view pos
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // robot count
     origin = origin + PointF(0.0f, 30.0f);

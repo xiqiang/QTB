@@ -27,6 +27,10 @@ double      dBushCrossTime = 0;
 double      dBushCrossTimeTotal = 0;
 double      dBushCrossTimeAvg = 0;
 
+float       lastFrameTime = 0;
+int         frameCount = 0;
+int         fps = 0;
+
 int RangeRand(int min, int max)
 {
     return rand() % (max - min) + min;
