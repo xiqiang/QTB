@@ -84,6 +84,7 @@ BOOL                bViewStaticBush = FALSE;
 BOOL                bViewDynamicBush = TRUE;
 BOOL                bViewBushGroup = FALSE;
 BOOL                bViewSelectedBushGroup = TRUE;
+BOOL                bViewMask = TRUE;
 
 BOOL                bEnableRobot = TRUE;
 BOOL                bViewRobot = TRUE;
@@ -387,6 +388,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CheckMenuItem(hmenuBar, ID_ROBOT_AUTOBUSH, MF_BYCOMMAND | check);
 
                     EnableRobotBush(bRobotAutoBush);
+                }
+                break;
+            case ID_VIEW_MASK:
+                {
+                    bViewMask = !bViewMask;
+                    UINT check = bViewMask ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_VIEW_MASK, MF_BYCOMMAND | check);
                 }
                 break;
             default:
@@ -765,7 +773,10 @@ VOID DrawMain(Graphics& graphics)
         DrawRobot(graphics);
 
     DrawMouseOperate(graphics);
-    DrawMask(graphics);
+
+    if(bViewMask)
+        DrawMask(graphics);
+
     DrawTexts(graphics);
 }
 
