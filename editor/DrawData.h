@@ -40,19 +40,19 @@ public:
 public:
 	DrawData() {
 		BushRes br;
-		br.color = Color(255, 0, 0, 0);
+		br.color = Color(128, 0, 0, 0);
 		m_bushResMap[-1] = br;
 
 		BushGroupRes bgr;
-		bgr.color = Color(255, 0, 0, 0);
+		bgr.color = Color(128, 0, 0, 0);
 		m_bushGroupResMap[-1] = bgr;
 
 		ZoneRes zr;
-		zr.color = Color(255, 0, 0, 0);
+		zr.color = Color(128, 0, 0, 0);
 		m_zoneResMap[NULL] = zr;
 
 		ZoneGenerationRes zgr;
-		zgr.color = Color(255, 0, 0, 0);
+		zgr.color = Color(128, 0, 0, 0);
 		m_zoneGenerationResMap[-1] = zgr;
 	}
 
@@ -63,7 +63,7 @@ public:
 			return it->second;
 
 		BushRes res;
-		res.color = Color(192, rand() % 256, rand() % 256, rand() % 256);
+		res.color = Color(128, rand() % 256, rand() % 256, rand() % 256);
 
 		std::pair<BushResMap::iterator, bool> ret = m_bushResMap.insert( std::pair<unsigned int, BushRes>(id, res));
 		assert(ret.second);
@@ -76,7 +76,7 @@ public:
 			return it->second;
 
 		BushGroupRes res;
-		res.color = Color(255, rand() % 256, rand() % 256, rand() % 256);
+		res.color = Color(128, rand() % 256, rand() % 256, rand() % 256);
 
 		std::pair<BushGroupResMap::iterator, bool> ret = m_bushGroupResMap.insert(std::pair<unsigned int, BushGroupRes>(id, res));
 		assert(ret.second);
@@ -89,7 +89,7 @@ public:
 			return it->second;
 
 		ZoneRes res;
-		res.color = Color(255, rand() % 256, rand() % 256, rand() % 256);
+		res.color = Color(128, rand() % 256, rand() % 256, rand() % 256);
 
 		std::pair<ZoneResMap::iterator, bool> ret = m_zoneResMap.insert(std::pair<qtb::Zone*, ZoneRes>(zone, res));
 		assert(ret.second);
@@ -102,7 +102,7 @@ public:
 			return it->second;
 
 		ZoneGenerationRes res;
-		res.color = Color(255, rand() % 256, rand() % 256, rand() % 256);
+		res.color = Color(128, rand() % 256, rand() % 256, rand() % 256);
 
 		std::pair<ZoneGenerationResMap::iterator, bool> ret = m_zoneGenerationResMap.insert(std::pair<unsigned int, ZoneGenerationRes>(id, res));
 		assert(ret.second);
