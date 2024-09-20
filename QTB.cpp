@@ -697,6 +697,7 @@ VOID OnUpdate()
     float appTime = GetTickCount64() / 1000.0f;
 
     RobotTick(appTime);
+    MouseBushHit();
 
     if (appTime - lastFrameTime < 1.0f)
     {
@@ -740,9 +741,10 @@ VOID RobotTick(float appTime)
         return;
 
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
-    {
         it->Tick(land, appTime);
 
+    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    {
         unsigned int bushGroupID = -1;
         unsigned int bushID = -1;
         BushContains(land, it->x(), it->y(), &bushGroupID, &bushID);
