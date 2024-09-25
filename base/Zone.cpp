@@ -5,6 +5,7 @@ namespace qtb
 {
 	Zone::Zone(const Area& area,  Zone* parent /*= NULL*/)
 		: QTree(area, parent)
+		, m_childBindCount(0)
 	{
 	}
 
@@ -15,11 +16,11 @@ namespace qtb
 
 	bool Zone::bushContains(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
 	{
-		if (!m_area.contains(x, y))
-			return false;
-
-		if(_bushContains(x, y, bushGroupID, bushID))
+		if(m_boundBushGroups.size() > 0 && _bushContains(x, y, bushGroupID, bushID))
 			return true;
+
+		if (m_childBindCount == 0)
+			return false;
 
 		Zone* c = dynamic_cast<Zone*>(child(x, y));
 		if (c)
@@ -36,6 +37,13 @@ namespace qtb
 		group->m_zone = this;
 		assert(m_boundBushGroups.find(group->id()) == m_boundBushGroups.end());
 		m_boundBushGroups[group->id()] = group;
+
+		if (m_parent)
+		{
+			Zone* parent = dynamic_cast<Zone*>(m_parent);
+			assert(parent);
+			parent->_incChildBindCount();
+		}
 	}
 
 	void Zone::unbindBushGroup(unsigned int groupID)
@@ -44,6 +52,13 @@ namespace qtb
 		assert(it != m_boundBushGroups.end());
 		it->second->m_zone = NULL;
 		m_boundBushGroups.erase(groupID);
+
+		if (m_parent)
+		{
+			Zone* parent = dynamic_cast<Zone*>(m_parent);
+			assert(parent);
+			parent->_decChildBindCount();
+		}
 	}
 
 	bool Zone::_bushContains(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/) const
@@ -65,4 +80,28 @@ namespace qtb
 		return false;
 	}
 
+	void Zone::_incChildBindCount()
+	{
+		++m_childBindCount; 
+
+		if (m_parent)
+		{
+			Zone* parent = dynamic_cast<Zone*>(m_parent);
+			assert(parent);
+			parent->_incChildBindCount();
+		}
+	}
+
+	void Zone::_decChildBindCount()
+	{ 
+		assert(m_childBindCount > 0);
+		--m_childBindCount;
+
+		if (m_parent)
+		{
+			Zone* parent = dynamic_cast<Zone*>(m_parent);
+			assert(parent);
+			parent->_decChildBindCount();
+		}
+	}
 }

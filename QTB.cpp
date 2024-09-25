@@ -53,7 +53,6 @@ ULONG_PTR           gdiplusToken;
 DrawData            drawData;
 qtb::Land*          land = NULL;
 
-std::list<qtb::QTree*>  viewZoneList;
 std::list<Robot>        robotList;
 std::list<unsigned int> bushIDList;
 
@@ -105,7 +104,6 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 VOID                ResetViewport(HWND hWnd);
 VOID                UpdateViewportRect(HWND hWnd);
-VOID                UpdateViewZoneList();
 
 VOID                InitLand();
 VOID                TermLand();
@@ -497,7 +495,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 viewPos.X = viewPosCache.X + (1 / viewZoom) * (cursorPos.X - mouseDownPosM.X);
                 viewPos.Y = viewPosCache.Y + (1 / viewZoom) * (cursorPos.Y - mouseDownPosM.Y);
-                UpdateViewZoneList();
             }
 
             cursorScalePos.X = (1 / viewZoom) * cursorPos.X;
@@ -527,15 +524,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 viewPos.X += scalePos.X - cursorScalePos.X;
                 viewPos.Y += scalePos.Y - cursorScalePos.Y;
                 cursorScalePos = scalePos;
-            }
-                
-            UpdateViewZoneList();
+            }                
         }
         break;
     case WM_SIZE:
         {
             UpdateViewportRect(hWnd);
-            UpdateViewZoneList();
         }
         break;
     default:
@@ -578,22 +572,6 @@ VOID UpdateViewportRect(HWND hWnd)
     rcViewport.Height = viewHeight;
 }
 
-VOID UpdateViewZoneList()
-{
-    if (!land)
-        return;
-
-    qtb::Area area(
-        rcViewport.X * (1 / viewZoom) - viewPos.X,
-        (rcViewport.X + rcViewport.Width) * (1 / viewZoom) - viewPos.X,
-        rcViewport.Y * (1 / viewZoom) - viewPos.Y,
-        (rcViewport.Y + rcViewport.Height) * (1 / viewZoom) - viewPos.Y);
-
-    viewZoneList.clear();
-    land->layer(area, viewZoneList);
-    visibleZone = viewZoneList.size();
-}
-
 VOID ResetViewport(HWND hWnd)
 {
     viewportScale = 0.7f;
@@ -602,7 +580,6 @@ VOID ResetViewport(HWND hWnd)
     viewZoom = 3.0f;
     viewPos.X = (1 / viewZoom) * (rcViewport.X + rcViewport.Width * 0.5f) - LAND_WIDTH * 0.5f;
     viewPos.Y = (1 / viewZoom) * (rcViewport.Y + rcViewport.Height * 0.5f) - LAND_HEIGHT * 0.5f;
-    UpdateViewZoneList();
 }
 
 VOID InitLand()
@@ -810,10 +787,20 @@ VOID DrawZones(Graphics& graphics)
     if (!land)
         return;
 
-    Color staticBushColor(192, 200, 192, 0);
+    Color staticBushColor(162, 200, 192, 0);
     Pen treePen(Color(32, 128, 128, 128));
     SolidBrush staticAreaBrush(staticBushColor);
-    SolidBrush dynamicBushBrush(Color(192, 112, 216, 0));
+    SolidBrush dynamicBushBrush(Color(160, 112, 216, 0));
+
+    qtb::Area area(
+        rcViewport.X * (1 / viewZoom) - viewPos.X,
+        (rcViewport.X + rcViewport.Width) * (1 / viewZoom) - viewPos.X,
+        rcViewport.Y * (1 / viewZoom) - viewPos.Y,
+        (rcViewport.Y + rcViewport.Height) * (1 / viewZoom) - viewPos.Y);
+
+    std::list<qtb::QTree*> viewZoneList;
+    land->layer(area, viewZoneList);
+    visibleZone = viewZoneList.size();
 
     for (std::list<qtb::QTree*>::const_iterator itZone = viewZoneList.begin(); itZone != viewZoneList.end(); ++itZone)
     {

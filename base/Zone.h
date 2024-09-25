@@ -18,9 +18,11 @@ namespace qtb
 	public:
 		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
 		const BushGroupPMap&	boundBushGroups() const { return m_boundBushGroups; }
+		size_t					fullBindCount() const { return m_boundBushGroups.size() + m_childBindCount; }
 
 	protected:
 		virtual QTree*			newChild(const Area& area);
+		virtual bool			layerTest() const { return fullBindCount() > 0; }
 
 	private:
 		void					bindBushGroup(BushGroup* group);
@@ -28,9 +30,12 @@ namespace qtb
 
 	private:
 		bool					_bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL) const;
+		void					_incChildBindCount();
+		void					_decChildBindCount();
 
 	private:
 		BushGroupPMap			m_boundBushGroups;
+		size_t					m_childBindCount;
 	};
 }
 

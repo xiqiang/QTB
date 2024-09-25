@@ -95,6 +95,9 @@ namespace qtb
 			if (!m_area.overlap(area))
 				return;
 
+			if (!layerTest())
+				return;
+				
 			list.push_back(this);
 			if (!m_hasChild)
 				return;
@@ -113,7 +116,8 @@ namespace qtb
 		}
 
 	protected:
-		virtual QTree* newChild(const Area& area) = 0;
+		virtual QTree*	newChild(const Area& area) = 0;
+		virtual bool	layerTest() const { return true; }
 
 	protected:
 		Area			m_area;
