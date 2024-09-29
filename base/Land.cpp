@@ -1,6 +1,7 @@
 #include <cassert>
 #include <vector>
 #include "Land.h"
+#include "Util.h"
 
 namespace qtb
 {
@@ -18,34 +19,82 @@ namespace qtb
 
 	void Land::clear()
 	{
-		clearBushMap(m_staticBushes);
+		clearBushGroupMap(m_bushGroups);
 		clearBushMap(m_dynamicBushes);
-		clearBushGroup();
+		clearBushMap(m_staticBushes);
 	}
 
-	void Land::rebuild(const AreaList& areas)
+	bool Land::rebuild(const AreaList& areas)
 	{
 		clear();
 
 		generateBushMap(areas, m_staticBushes);
-		for (BushPMap::iterator itBush = m_staticBushes.begin(); itBush != m_staticBushes.end(); ++itBush)
-		{
-			BushGroup* group = new BushGroup(m_nextBushGroupID++);
-			m_bushGroups[group->id()] = group;
-			group->add(itBush->second);
+		if (m_staticBushes.empty())
+			return false;
 
-			resideBushGroup(group);
+		BushPMap::const_iterator itBushEnd = m_staticBushes.end();
+		for (BushPMap::const_iterator itBush = m_staticBushes.begin(); itBush != itBushEnd; ++itBush)
+		{
+			BushGroup* group = NULL;
+			try
+			{
+				QTB_RAND_BAD_ALLOC(1);
+				group = new BushGroup(m_nextBushGroupID++);
+				if (!group)
+					return false;
+
+				QTB_RAND_BAD_ALLOC(1);
+				std::pair<BushGroupPMap::iterator, bool> ret = m_bushGroups.insert(
+					std::pair<unsigned int, BushGroup*>(group->id(), group));
+			}
+			catch (std::bad_alloc&)
+			{
+				if (group)
+					delete group;
+
+				qtbLog("bad_alloc:  Land::rebuild\n");
+				return false;
+			}
+
+			if (!group->add(itBush->second))
+				return false;
+
+			if (!resideBushGroup(group))
+				return false;
 		}
+
+		return true;
 	}
 
 	unsigned int Land::createBush(const Area& area, Area* influence /*= NULL*/)
 	{
-		Bush* bush = new Bush(m_nextBushID++);
-		bush->add(area);
-		m_dynamicBushes[bush->id()] = bush;
+		Bush* bush = NULL;
+		try
+		{
+			QTB_RAND_BAD_ALLOC(1);
+			bush = new Bush(m_nextBushID++);
+			if(!bush)
+				return UINT_MAX;
+
+			QTB_RAND_BAD_ALLOC(1);
+			std::pair<BushPMap::iterator, bool> ret = m_dynamicBushes.insert(
+				std::pair<unsigned int, Bush*>(bush->id(), bush));
+		}
+		catch (std::bad_alloc&)
+		{
+			if (bush)
+				delete bush;
+
+			qtbLog("bad_alloc:  Land::createBush\n");
+			return UINT_MAX;
+		}
+
+		if(!bush->add(area))
+			return bush->id();
 
 		BushGroup* group = resideBush(bush);
-		assert(group);
+		if (!group)
+			return bush->id();
 
 		if (influence)
 			*influence = group->overall();
@@ -61,155 +110,298 @@ namespace qtb
 
 		Bush* bush = itFind->second;
 		assert(bush);
+
 		BushGroup* group = bush->m_group;
-		assert(group);
-
-		if (influence)
-			*influence = group->overall();
-
-		group->remove(id);
-		recycleBushGroup(group);
+		if (group)
+		{
+			if (influence)
+				*influence = group->overall();
+			group->remove(id);
+		}
 
 		m_dynamicBushes.erase(id);
 		delete bush;
 
-		return true;
+		bool ret = true;
+		if (group)
+			ret = recycleBushGroup(group);
+
+		return ret;
 	}
 
-	void Land::generateBushMap(const AreaList& areaMap, BushPMap& bushMap)
+	bool Land::generateBushMap(const AreaList& areaMap, BushPMap& bushMap)
 	{
-		bushMap.clear();
+		assert(bushMap.empty());
 
-		for (AreaList::const_iterator itArea = areaMap.begin(); itArea != areaMap.end(); ++itArea)
+		AreaList::const_iterator itAreaEnd = areaMap.end();
+		for (AreaList::const_iterator itArea = areaMap.begin(); itArea != itAreaEnd; ++itArea)
 		{
 			std::vector<unsigned> collisions;
-			for (BushPMap::iterator itBush = bushMap.begin(); itBush != bushMap.end(); ++itBush)
+			if (!bushMap.empty())
 			{
-				if (itBush->second->overlap(*itArea))
-					collisions.push_back(itBush->first);
+				BushPMap::const_iterator itBushEnd = bushMap.end();
+				for (BushPMap::const_iterator itBush = bushMap.begin(); itBush != itBushEnd; ++itBush)
+				{
+					if (itBush->second->overlap(*itArea))
+					{
+						try
+						{
+							QTB_RAND_BAD_ALLOC(1);
+							collisions.push_back(itBush->first);
+						}
+						catch (std::bad_alloc&)
+						{
+							qtbLog("bad_alloc:  Land::generateBushMap collisions\n");
+							return false;
+						}
+					}
+				}
 			}
 
 			if (collisions.empty())
 			{
-				Bush* bush = new Bush(m_nextBushID++);
+				Bush* bush = NULL;
+				try
+				{
+					QTB_RAND_BAD_ALLOC(1);
+					bush = new Bush(m_nextBushID++);
+					if (!bush)
+						return false;
+
+					QTB_RAND_BAD_ALLOC(1);
+					std::pair<BushPMap::iterator, bool> ret = bushMap.insert(
+						std::pair<unsigned int, Bush*>(bush->id(), bush));
+				}
+				catch (std::bad_alloc&)
+				{
+					if (bush)
+						delete bush;
+
+					qtbLog("bad_alloc:  Land::generateBushMap bush\n");
+					return false;
+				}
+
 				bush->m_isStatic = true;
-				bushMap[bush->id()] = bush;
-				bush->add(*itArea);
+				if (!bush->add(*itArea))
+					return false;
 			}
 			else
 			{
 				Bush* bush = bushMap[collisions[0]];
-				bush->add(*itArea);
+				if (!bush->add(*itArea))
+					return false;
+
 				for (size_t i = 1; i < collisions.size(); ++i)
 				{
 					Bush* spliceBush = bushMap[collisions[i]];
 					assert(spliceBush);
-					bush->splice(*spliceBush);
+					if (!bush->splice(*spliceBush))
+						return false;
 
 					bushMap.erase(collisions[i]);
 					delete spliceBush;
 				}
 			}
 		}
+
+		return true;
 	}
 
 	BushGroup* Land::resideBush(Bush* bush)
 	{
 		assert(bush);
 
-		std::vector<unsigned> collisions;
 		std::list<QTree*> treeList;
-		layer(bush->overall(), treeList);
+		if (!layer(bush->overall(), treeList) || treeList.empty())
+			return NULL;
 
-		for (std::list<QTree*>::iterator itTree = treeList.begin(); itTree != treeList.end(); ++itTree)
+		std::vector<unsigned> collisions;
+		std::list<QTree*>::const_iterator itTreeEnd = treeList.end();
+		for (std::list<QTree*>::const_iterator itTree = treeList.begin(); itTree != itTreeEnd; ++itTree)
 		{
 			Zone* zone = dynamic_cast<Zone*>(*itTree);
 			assert(zone);
 
 			const BushGroupPMap& resideBushGroupMap = zone->boundBushGroups();
-			for (BushGroupPMap::const_iterator itGroup = resideBushGroupMap.begin(); itGroup != resideBushGroupMap.end(); ++itGroup)
+			BushGroupPMap::const_iterator itGroupEnd = resideBushGroupMap.end();
+			for (BushGroupPMap::const_iterator itGroup = resideBushGroupMap.begin(); itGroup != itGroupEnd; ++itGroup)
 			{
 				if (itGroup->second->overlap(*(bush)))
-					collisions.push_back(itGroup->first);
+				{
+					try
+					{
+						QTB_RAND_BAD_ALLOC(1);
+						collisions.push_back(itGroup->first);
+					}
+					catch (std::bad_alloc&)
+					{
+						qtbLog("bad_alloc:  Land::resideBush collisions\n");
+						return NULL;
+					}
+				}
 			}
 		}
 
 		if (collisions.empty())
 		{
-			BushGroup* group = new BushGroup(m_nextBushGroupID++);
-			m_bushGroups[group->id()] = group;
-			group->add(bush);
-			resideBushGroup(group);
-			return group;
-		}
-		else
-		{
-			BushGroup* group = m_bushGroups[collisions[0]];
-			assert(group->m_zone);
-			group->m_zone->unbindBushGroup(collisions[0]);
-			group->add(bush);
-
-			for (size_t i = 1; i < collisions.size(); ++i)
+			BushGroup* group = NULL;
+			try
 			{
-				BushGroup* spliceGroup = m_bushGroups[collisions[i]];
-				assert(spliceGroup);
-				group->splice(*spliceGroup);
+				QTB_RAND_BAD_ALLOC(1);
+				group = new BushGroup(m_nextBushGroupID++);
+				if (!group)
+					return NULL;
 
-				assert(spliceGroup->zone());
-				spliceGroup->m_zone->unbindBushGroup(collisions[i]);
+				QTB_RAND_BAD_ALLOC(1);
+				std::pair<BushGroupPMap::iterator, bool> ret = m_bushGroups.insert(
+					std::pair<unsigned int, BushGroup*>(group->id(), group));
+			}
+			catch (std::bad_alloc&)
+			{
+				if (group)
+					delete group;
 
-				m_bushGroups.erase(collisions[i]);
-				delete spliceGroup;
+				qtbLog("bad_alloc:  Land::resideBush bushGroup\n");
+				return NULL;
 			}
 
-			resideBushGroup(group);
+			if (!group->add(bush))
+				return NULL;
+
+			if (!resideBushGroup(group))
+				return NULL;
+
 			return group;
 		}
+
+		BushGroup* group = m_bushGroups[collisions[0]];
+		if (!group->add(bush))
+			return NULL;
+
+		assert(group->m_zone);
+		group->m_zone->unbindBushGroup(collisions[0]);
+
+		for (size_t i = 1; i < collisions.size(); ++i)
+		{
+			BushGroup* spliceGroup = m_bushGroups[collisions[i]];
+			assert(spliceGroup);
+			if (!group->splice(*spliceGroup))
+				return NULL;
+
+			assert(spliceGroup->m_zone);
+			spliceGroup->m_zone->unbindBushGroup(collisions[i]);
+
+			m_bushGroups.erase(collisions[i]);
+			delete spliceGroup;
+		}
+
+		if (!resideBushGroup(group))
+			return NULL;
+
+		return group;
 	}
 
-	void Land::resideBushGroup(BushGroup* group)
+	bool Land::resideBushGroup(BushGroup* group)
 	{
 		assert(group->zone() == NULL);
+
 		Zone* zone = dynamic_cast<Zone*>(locate(group->overall()));
 		assert(zone);
-		zone->bindBushGroup(group);
+		return zone->bindBushGroup(group);
 	}
 
-	void Land::recycleBushGroup(BushGroup* group)
+	bool Land::recycleBushGroup(BushGroup* group)
 	{
 		assert(group);
 		assert(m_bushGroups.find(group->id()) != m_bushGroups.end());
 
-		assert(group->m_zone);
-		group->m_zone->unbindBushGroup(group->id());
+		group->releaseBushes();
+		if (group->m_zone)
+			group->m_zone->unbindBushGroup(group->id());
+
+		BushPMap bushMap;
+		bushMap.swap(group->m_bushes);
+		m_bushGroups.erase(group->id());
+		delete group;
 
 		BushGroupPMap groupMap;
-		const BushPMap& bushMap = group->bushes();
-
-		for (BushPMap::const_iterator itBush = bushMap.begin(); itBush != bushMap.end(); ++itBush)
+		BushPMap::const_iterator itBushEnd = bushMap.end();
+		for (BushPMap::const_iterator itBush = bushMap.begin(); itBush != itBushEnd; ++itBush)
 		{
 			std::vector<unsigned> collisions;
-			for (BushGroupPMap::iterator itGroup = groupMap.begin(); itGroup != groupMap.end(); ++itGroup)
+			if (!groupMap.empty())
 			{
-				if (itGroup->second->overlap(*(itBush->second)))
-					collisions.push_back(itGroup->first);
+				BushGroupPMap::iterator itGroupEnd = groupMap.end();
+				for (BushGroupPMap::iterator itGroup = groupMap.begin(); itGroup != itGroupEnd; ++itGroup)
+				{
+					if (itGroup->second->overlap(*(itBush->second)))
+					{
+						try
+						{
+							QTB_RAND_BAD_ALLOC(1);
+							collisions.push_back(itGroup->first);
+						}
+						catch (std::bad_alloc&)
+						{
+							clearBushGroupMap(groupMap);
+							qtbLog("bad_alloc:  Land::recycleBushGroup collisions\n");
+							return false;
+						}
+					}
+				}
 			}
 
 			if (collisions.empty())
 			{
-				BushGroup* cacheGroup = new BushGroup(m_nextBushGroupID++);
-				groupMap[cacheGroup->id()] = cacheGroup;
-				cacheGroup->add(itBush->second);
+				BushGroup* cacheGroup = NULL;
+				try
+				{
+					QTB_RAND_BAD_ALLOC(1);
+					cacheGroup = new BushGroup(m_nextBushGroupID++);
+					if (!cacheGroup)
+					{
+						clearBushGroupMap(groupMap);
+						return false;
+					}
+
+					QTB_RAND_BAD_ALLOC(1);
+					std::pair<BushGroupPMap::iterator, bool> ret = groupMap.insert(
+						std::pair<unsigned int, BushGroup*>(cacheGroup->id(), cacheGroup));
+				}
+				catch (std::bad_alloc&)
+				{
+					if (cacheGroup)
+						delete cacheGroup;
+
+					clearBushGroupMap(groupMap);
+					qtbLog("bad_alloc:  Land::recycleBushGroup groupMap\n");
+					return false;
+				}
+
+				if (!cacheGroup->add(itBush->second))
+				{
+					clearBushGroupMap(groupMap);
+					return false;
+				}
 			}
 			else
 			{
 				BushGroup* cacheGroup = groupMap[collisions[0]];
-				cacheGroup->add(itBush->second);
+				if (!cacheGroup->add(itBush->second))
+				{
+					clearBushGroupMap(groupMap);
+					return false;
+				}
+
 				for (size_t i = 1; i < collisions.size(); ++i)
 				{
 					BushGroup* spliceGroup = groupMap[collisions[i]];
 					assert(spliceGroup);
-					cacheGroup->splice(*spliceGroup);
+					if (!cacheGroup->splice(*spliceGroup))
+					{
+						clearBushGroupMap(groupMap);
+						return false;
+					}
 
 					groupMap.erase(collisions[i]);
 					delete spliceGroup;
@@ -217,35 +409,55 @@ namespace qtb
 			}
 		}
 
-		for (BushGroupPMap::const_iterator itGroup = groupMap.begin(); itGroup != groupMap.end(); ++itGroup)
-			resideBushGroup(itGroup->second);
+		BushGroupPMap::const_iterator itGroupBegin = groupMap.begin();
+		BushGroupPMap::const_iterator itGroupEnd = groupMap.end();
 
-		m_bushGroups.insert(groupMap.begin(), groupMap.end());
-		m_bushGroups.erase(group->id());
-		delete group;
+		try
+		{
+			QTB_RAND_BAD_ALLOC(1);
+			m_bushGroups.insert(itGroupBegin, itGroupEnd);
+		}
+		catch (std::bad_alloc&)
+		{
+			clearBushGroupMap(groupMap);
+			qtbLog("bad_alloc:  Land::recycleBushGroup m_bushGroups\n");
+			return false;
+		}
+
+		for (BushGroupPMap::const_iterator itGroup = itGroupBegin; itGroup != itGroupEnd; ++itGroup)
+		{
+			if (!resideBushGroup(itGroup->second))
+				return false;
+		}
+
+		return true;
 	}
 
 	void Land::clearBushMap(BushPMap& bushMap)
 	{
 		for (BushPMap::iterator it = bushMap.begin(); it != bushMap.end(); ++it)
 		{
-			assert(it->second);
-			delete it->second;
+			Bush* bush = it->second;
+			assert(bush);
+			delete bush;
 		}
 		bushMap.clear();
 	}
 
-	void Land::clearBushGroup()
+	void Land::clearBushGroupMap(BushGroupPMap& bushGroupMap)
 	{
-		for (BushGroupPMap::iterator it = m_bushGroups.begin(); it != m_bushGroups.end(); ++it)
+		for (BushGroupPMap::iterator it = bushGroupMap.begin(); it != bushGroupMap.end(); ++it)
 		{
 			BushGroup* group = it->second;
 			assert(group);
+			group->releaseBushes();
+
 			if (group->m_zone)
 				group->m_zone->unbindBushGroup(group->id());
+
 			delete group;
 		}
-		m_bushGroups.clear();
+		bushGroupMap.clear();
 	}
 
 }

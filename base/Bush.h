@@ -30,8 +30,8 @@ namespace qtb
 		bool				contains(float x, float y) const;
 
 	private:
-		void				add(const Area& area);
-		void				splice(Bush& other);
+		bool				add(const Area& area);
+		bool				splice(Bush& other);
 
 	private:
 		unsigned int		m_id;
@@ -39,11 +39,12 @@ namespace qtb
 		AreaList			m_areaList;
 		Area				m_overall;
 		bool				m_isStatic;
+
+		QTB_OVERLOAD_BLOCK
 	};
 
 	typedef std::list<Bush*>				BushPList;
 	typedef std::map<unsigned int, Bush*>	BushPMap;
-
 }
 
 #endif

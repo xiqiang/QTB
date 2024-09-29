@@ -145,6 +145,7 @@
     <ClInclude Include="base\Bush.h" />
     <ClInclude Include="base\Land.h" />
     <ClInclude Include="base\QTree.h" />
+    <ClInclude Include="base\Util.h" />
     <ClInclude Include="base\Zone.h" />
     <ClInclude Include="editor\DrawData.h" />
     <ClInclude Include="editor\PerfTool.h" />

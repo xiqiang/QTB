@@ -16,7 +16,7 @@ namespace qtb
 	public:
 		void					clear();
 
-		void					rebuild(const AreaList& areas);
+		bool					rebuild(const AreaList& areas);
 		const BushPMap&			staticBushes() const { return m_staticBushes; }
 
 		unsigned int			createBush(const Area& area, Area* influence = NULL);
@@ -26,14 +26,14 @@ namespace qtb
 		const BushGroupPMap&	bushGroups() const { return m_bushGroups; }
 
 	private:
-		void					generateBushMap(const AreaList& areas, BushPMap& bushes);
+		bool					generateBushMap(const AreaList& areas, BushPMap& bushes);
 
 		BushGroup*				resideBush(Bush* bush);
-		void					resideBushGroup(BushGroup* group);
-		void					recycleBushGroup(BushGroup* group);
+		bool					resideBushGroup(BushGroup* group);
+		bool					recycleBushGroup(BushGroup* group);
 
 		void					clearBushMap(BushPMap& bushMap);
-		void					clearBushGroup();
+		void					clearBushGroupMap(BushGroupPMap& bushGroupMap);
 
 	private:
 		unsigned int	m_nextBushID;

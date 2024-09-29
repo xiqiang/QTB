@@ -4,6 +4,7 @@
 #include <list>
 #include <cassert>
 #include "Area.h"
+#include "Util.h"
 
 namespace qtb 
 {
@@ -52,21 +53,35 @@ namespace qtb
 
 			Area areaLB(cx - width, cx, cy - height, cy);
 			m_children[LB] = newChild(areaLB);
-			m_children[LB]->devide(minSize);
+			if (m_children[LB])
+			{
+				m_hasChild = true;
+				m_children[LB]->devide(minSize);
+			}
 
 			Area areaLT(cx - width, cx, cy, cy + height);
 			m_children[LT] = newChild(areaLT);
-			m_children[LT]->devide(minSize);
+			if (m_children[LT])
+			{
+				m_hasChild = true;
+				m_children[LT]->devide(minSize);
+			}
 
 			Area areaRB(cx, cx + width, cy - height, cy);
 			m_children[RB] = newChild(areaRB);
-			m_children[RB]->devide(minSize);
+			if (m_children[RB])
+			{
+				m_hasChild = true;
+				m_children[RB]->devide(minSize);
+			}
 
 			Area areaRT(cx, cx + width, cy, cy + height);
 			m_children[RT] = newChild(areaRT);
-			m_children[RT]->devide(minSize);
-
-			m_hasChild = true;
+			if (m_children[RT])
+			{
+				m_hasChild = true;
+				m_children[RT]->devide(minSize);
+			}
 		}
 
 		QTree* child(unsigned int index) {
@@ -91,28 +106,40 @@ namespace qtb
 				return this;
 		}
 
-		void layer(const Area& area, std::list<QTree*>& list) {
+		bool layer(const Area& area, std::list<QTree*>& list) {
 			if (!m_area.overlap(area))
-				return;
+				return true;
 
 			if (!layerTest())
-				return;
-				
-			list.push_back(this);
+				return true;
+			
+			try
+			{
+				QTB_RAND_BAD_ALLOC(1);
+				list.push_back(this);
+			}
+			catch (std::bad_alloc&)
+			{
+				qtbLog("bad_alloc:  QTree::layer\n");
+				return false;
+			}
+
 			if (!m_hasChild)
-				return;
+				return true;
 
-			assert(m_children[LB]);
-			m_children[LB]->layer(area, list);
+			if (m_children[LB] && !m_children[LB]->layer(area, list))
+				return false;
 
-			assert(m_children[LT]);
-			m_children[LT]->layer(area, list);
+			if (m_children[LT] && !m_children[LT]->layer(area, list))
+				return false;
 
-			assert(m_children[RB]);
-			m_children[RB]->layer(area, list);
+			if (m_children[RB] && !m_children[RB]->layer(area, list))
+				return false;
 
-			assert(m_children[RT]);
-			m_children[RT]->layer(area, list);
+			if (m_children[RT] && !m_children[RT]->layer(area, list))
+				return false;
+
+			return true;
 		}
 
 	protected:
@@ -125,6 +152,8 @@ namespace qtb
 		unsigned int	m_generation;
 		QTree*			m_children[CHILD_COUNT];
 		bool			m_hasChild;
+
+		QTB_OVERLOAD_BLOCK
 	};
 }
 

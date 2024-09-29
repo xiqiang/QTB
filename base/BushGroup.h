@@ -15,6 +15,7 @@ namespace qtb
 
 	private:
 		BushGroup(unsigned int id);
+		~BushGroup();
 
 	public:
 		unsigned int	id() const { return m_id; }
@@ -26,9 +27,10 @@ namespace qtb
 		bool			contains(float x, float y, unsigned int* bushID = NULL) const;
 
 	private:
-		void			add(Bush* bush);
+		bool			add(Bush* bush);
 		void			remove(unsigned int bushID);
-		void			splice(BushGroup& other);
+		bool			splice(BushGroup& other);
+		void			releaseBushes();
 
 	private:
 		unsigned int	m_id;
@@ -36,6 +38,8 @@ namespace qtb
 
 		BushPMap		m_bushes;
 		Area			m_overall;
+
+		QTB_OVERLOAD_BLOCK
 	};
 
 	typedef std::map<unsigned int, BushGroup*>	BushGroupPMap;

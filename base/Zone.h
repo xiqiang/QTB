@@ -18,14 +18,13 @@ namespace qtb
 	public:
 		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
 		const BushGroupPMap&	boundBushGroups() const { return m_boundBushGroups; }
-		size_t					fullBindCount() const { return m_boundBushGroups.size() + m_childBindCount; }
 
 	protected:
 		virtual QTree*			newChild(const Area& area);
-		virtual bool			layerTest() const { return fullBindCount() > 0; }
+		virtual bool			layerTest() const { return !m_boundBushGroups.empty() || m_childBindCount > 0; }
 
 	private:
-		void					bindBushGroup(BushGroup* group);
+		bool					bindBushGroup(BushGroup* group);
 		void					unbindBushGroup(unsigned int groupID);
 
 	private:
@@ -36,6 +35,8 @@ namespace qtb
 	private:
 		BushGroupPMap			m_boundBushGroups;
 		size_t					m_childBindCount;
+
+		QTB_OVERLOAD_BLOCK
 	};
 }
 

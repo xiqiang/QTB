@@ -1,6 +1,7 @@
 #include <cassert>
 #include "Bush.h"
 #include "Land.h"
+#include "Util.h"
 
 namespace qtb
 {
@@ -19,12 +20,14 @@ namespace qtb
 		size_t size = m_areaList.size();
 		size_t size_r = other.m_areaList.size();
 
-		for (AreaList::const_iterator it = m_areaList.begin(); it != m_areaList.end(); ++it)
+		AreaList::const_iterator itEnd = m_areaList.end();
+		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
 		{
 			if (size > 1 && size_r > 1 && !it->overlap(other.m_overall))
 				continue;
 
-			for (AreaList::const_iterator it_r = other.m_areaList.begin(); it_r != other.m_areaList.end(); ++it_r)
+			AreaList::const_iterator it_rEnd = other.m_areaList.end();
+			for (AreaList::const_iterator it_r = other.m_areaList.begin(); it_r != it_rEnd; ++it_r)
 			{
 				if (it->overlap(*it_r))
 					return true;
@@ -38,7 +41,8 @@ namespace qtb
 		if (!m_overall.overlap(area))
 			return false;
 
-		for (AreaList::const_iterator it = m_areaList.begin(); it != m_areaList.end(); ++it)
+		AreaList::const_iterator itEnd = m_areaList.end();
+		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
 		{
 			if (it->overlap(area))
 				return true;
@@ -51,7 +55,8 @@ namespace qtb
 		if (!m_overall.contains(x, y))
 			return false;
 
-		for (AreaList::const_iterator it = m_areaList.begin(); it != m_areaList.end(); ++it)
+		AreaList::const_iterator itEnd = m_areaList.end();
+		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
 		{
 			if (it->contains(x, y))
 				return true;
@@ -59,9 +64,21 @@ namespace qtb
 		return false;
 	}
 
-	void Bush::add(const Area& area)
+	bool Bush::add(const Area& area)
 	{
-		if (m_areaList.empty())
+		bool first = m_areaList.empty();
+		try
+		{
+			QTB_RAND_BAD_ALLOC(1);
+			m_areaList.push_back(area);
+		}
+		catch (std::bad_alloc&)
+		{
+			qtbLog("bad_alloc: Bush::add\n");
+			return false;
+		}
+
+		if (first)
 		{
 			m_overall = area;
 		}
@@ -77,23 +94,34 @@ namespace qtb
 				m_overall.top = area.top;
 		}
 
-		m_areaList.push_back(area);
+		return true;
 	}
 
-	void Bush::splice(Bush& other)
+	bool Bush::splice(Bush& other)
 	{
-		const Area& area = other.overall();
-		if (m_overall.left > area.left)
-			m_overall.left = area.left;
-		if (m_overall.right < area.right)
-			m_overall.right = area.right;
-		if (m_overall.bottom > area.bottom)
-			m_overall.bottom = area.bottom;
-		if (m_overall.top < area.top)
-			m_overall.top = area.top;
+		try
+		{
+			QTB_RAND_BAD_ALLOC(1);
+			m_areaList.splice(m_areaList.end(), other.m_areaList);
+		}
+		catch (std::bad_alloc&)
+		{
+			qtbLog("bad_alloc: Bush::splice\n");
+			return false;
+		}
 
-		m_areaList.splice(m_areaList.end(), other.m_areaList);
+		const Area& otherOverall = other.overall();
+		if (m_overall.left > otherOverall.left)
+			m_overall.left = otherOverall.left;
+		if (m_overall.right < otherOverall.right)
+			m_overall.right = otherOverall.right;
+		if (m_overall.bottom > otherOverall.bottom)
+			m_overall.bottom = otherOverall.bottom;
+		if (m_overall.top < otherOverall.top)
+			m_overall.top = otherOverall.top;
+
 		other.m_areaList.clear();
+		return true;
 	}
 
 }

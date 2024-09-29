@@ -15,6 +15,7 @@
 #include "framework.h"
 #include "QTB.h"
 #include "base/Land.h"
+#include "base/Util.h"
 #include "editor/Util.h"
 #include "editor/DrawData.h"
 #include "editor/PerfTool.h"
@@ -49,6 +50,11 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 
 GdiplusStartupInput gdiplusStartupInput;
 ULONG_PTR           gdiplusToken;
+Graphics*           graphics = NULL;
+
+HDC                 hdcMem = NULL;
+HBITMAP             hbmMem = NULL;
+HBITMAP             hbmOld = NULL;
 
 DrawData            drawData;
 qtb::Land*          land = NULL;
@@ -117,14 +123,16 @@ VOID                GetMouseArea(qtb::Area& area);
 VOID                MouseBushHit();
 VOID                RobotTick(float appTime);
 
+VOID                PrepareMemBitmap(HWND hWnd);
+VOID                CleanupMemBitmap();
 VOID                OnPaint(HWND hWnd, PAINTSTRUCT* ps);
-VOID                DrawMain(Graphics& graphics);
-VOID                DrawZones(Graphics& graphics);
-VOID                DrawRobot(Graphics& graphics);
-VOID                DrawSelectedBushGroup(Graphics& graphics);
-VOID                DrawMouseOperate(Graphics& graphics);
-VOID                DrawMask(Graphics& graphics);
-VOID                DrawTexts(Graphics& graphics);
+VOID                DrawMain();
+VOID                DrawZones();
+VOID                DrawRobot();
+VOID                DrawSelectedBushGroup();
+VOID                DrawMouseOperate();
+VOID                DrawMask();
+VOID                DrawTexts();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -176,8 +184,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
-    TermInstance(hInstance);
+    CleanupMemBitmap();
     GdiplusShutdown(gdiplusToken);
+    TermInstance(hInstance);
     //_CrtDumpMemoryLeaks();
 
     return (int) msg.wParam;
@@ -570,6 +579,9 @@ VOID UpdateViewportRect(HWND hWnd)
     rcViewport.Y = rcClient.top + (clientHeight - viewHeight) * 0.5f;
     rcViewport.Width = viewWidth;
     rcViewport.Height = viewHeight;
+
+    CleanupMemBitmap();
+    PrepareMemBitmap(hWnd);
 }
 
 VOID ResetViewport(HWND hWnd)
@@ -587,7 +599,20 @@ VOID InitLand()
     srand((unsigned int)time(NULL));
 
     qtb::Area area(0, LAND_WIDTH, 0, LAND_HEIGHT);
-    land = new qtb::Land(area);
+
+    try
+    {
+        QTB_RAND_BAD_ALLOC(1);
+        land = new qtb::Land(area);
+        if (!land)
+            return;
+    }
+    catch (std::bad_alloc&)
+    {
+        qtbLog("bad_alloc:  InitLand\n");
+        return;
+    }
+
     land->devide(MIN_ZONE_SIZE);
 
     RandomStaticBush();
@@ -640,7 +665,16 @@ VOID RandomStaticBush()
         float w = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
         float h = RangeRand(AREA_SIZE_MIN, AREA_SIZE_MAX) * 0.5f;
 
-        staticAreas.push_back(qtb::Area(x - w, x + w, y - h, y + h));
+        try
+        {
+            QTB_RAND_BAD_ALLOC(1);
+            staticAreas.push_back(qtb::Area(x - w, x + w, y - h, y + h));
+        }
+        catch (std::bad_alloc&)
+        {
+            qtbLog("bad_alloc:  RandomStaticBush\n");
+            break;
+        }
     }
 
     perfTool.Start();
@@ -729,63 +763,106 @@ VOID RobotTick(float appTime)
     }
 }
 
+VOID PrepareMemBitmap(HWND hWnd)
+{
+    assert(NULL == graphics);
+    assert(NULL == hbmMem);
+    assert(NULL == hdcMem);
+
+    HDC hdc = GetDC(hWnd);
+    if (NULL == hdc)
+        return;
+
+    hdcMem = CreateCompatibleDC(hdc);
+    if (NULL == hdcMem)
+        return;
+
+    hbmMem = CreateCompatibleBitmap(hdc, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
+    if (NULL == hbmMem)
+        return;
+
+    hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
+    graphics = new Graphics(hdcMem);
+}
+
+VOID CleanupMemBitmap()
+{
+    if (graphics != NULL)
+    {
+        delete graphics;
+        graphics = NULL;
+    }
+
+    if (hbmOld != NULL)
+    {
+        SelectObject(hdcMem, hbmOld);
+        hbmOld = NULL;
+    }
+
+    if (hbmMem != NULL)
+    {
+        DeleteObject(hbmMem);
+        hbmMem = NULL;
+    }
+
+    if (hdcMem != NULL)
+    {
+        DeleteDC(hdcMem);
+        hdcMem = NULL;
+    }
+}
+
+
 VOID OnPaint(HWND hWnd, PAINTSTRUCT* ps)
 {
     if (!land)
         return;
-    
-    const RECT& rc = rcClient;
 
+    if (!graphics)
+        return;
+    
     // ready
-    HDC hdcMem = CreateCompatibleDC(ps->hdc);
-    HBITMAP hbmMem = CreateCompatibleBitmap(ps->hdc, rc.right - rc.left, rc.bottom - rc.top);
-    HBITMAP hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
-    Graphics graphics(hdcMem);
+    const RECT& rc = rcClient;
 
     // erase
     SolidBrush solidBrush(Color(255, 255, 255, 255));
     Rect grc((INT)rc.left, (INT)rc.top, (INT)(rc.right - rc.left), (INT)(rc.bottom - rc.top));
-    graphics.FillRectangle(&solidBrush, grc);
+    graphics->FillRectangle(&solidBrush, grc);
 
     // draw
-    DrawMain(graphics);
+    DrawMain();
 
     // present
     BitBlt(ps->hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, hdcMem, 0, 0,  SRCCOPY);
 
-    // cleanup
-    SelectObject(hdcMem, hbmOld);
-    DeleteObject(hbmMem);
-    DeleteDC(hdcMem);
-
     return;
 }
 
-VOID DrawMain(Graphics& graphics)
+VOID DrawMain()
 {
-    if (!land)
-        return;
+    assert(land);
+    assert(graphics);
 
-    DrawZones(graphics);
+    DrawZones();
 
     if (bViewSelectedBushGroup)
-        DrawSelectedBushGroup(graphics);
+        DrawSelectedBushGroup();
 
     if (bViewRobot)
-        DrawRobot(graphics);
+        DrawRobot();
 
-    DrawMouseOperate(graphics);
+    DrawMouseOperate();
 
     if(bViewMask)
-        DrawMask(graphics);
+        DrawMask();
 
-    DrawTexts(graphics);
+    DrawTexts();
 }
 
-VOID DrawZones(Graphics& graphics)
+VOID DrawZones()
 {
-    if (!land)
-        return;
+    assert(land);
+    assert(graphics);
 
     Color staticBushColor(162, 200, 192, 0);
     Pen treePen(Color(32, 128, 128, 128));
@@ -810,7 +887,7 @@ VOID DrawZones(Graphics& graphics)
         {
             const qtb::Area& areaTree = zone->area();
             RectF rcTree(viewZoom * (areaTree.left + viewPos.X), viewZoom * (areaTree.bottom + viewPos.Y), viewZoom * areaTree.width(), viewZoom * areaTree.height());
-            graphics.DrawRectangle(&treePen, rcTree);
+            graphics->DrawRectangle(&treePen, rcTree);
         }
 
         const qtb::BushGroupPMap& boundBushGroups = zone->boundBushGroups();
@@ -841,21 +918,21 @@ VOID DrawZones(Graphics& graphics)
                         {
                             RectF rcArea(viewZoom * (viewPos.X + itArea->left), viewZoom * (viewPos.Y + itArea->bottom), viewZoom * itArea->width(), viewZoom * itArea->height());
                             if (rcViewport.IntersectsWith(rcArea))
-                                graphics.FillRectangle(&staticAreaBrush, rcArea);
+                                graphics->FillRectangle(&staticAreaBrush, rcArea);
                         }
                     }
 
                     if (bViewStaticBush)
                     {
                         Pen pen(staticBushColor);
-                        graphics.DrawRectangle(&pen, rcBush);
+                        graphics->DrawRectangle(&pen, rcBush);
                     }
                 }
                 else
                 {
                     if (bViewDynamicBush)
                     {
-                        graphics.FillRectangle(&dynamicBushBrush, rcBush);
+                        graphics->FillRectangle(&dynamicBushBrush, rcBush);
                     }
                 }
             }
@@ -863,15 +940,17 @@ VOID DrawZones(Graphics& graphics)
             if (bViewBushGroup)
             {
                 Pen pen(drawData.GetZoneGenerationRes(zone->generation()).color);
-                graphics.DrawRectangle(&pen, rcGroup);
+                graphics->DrawRectangle(&pen, rcGroup);
             }
         }
     }
 
 }
 
-VOID DrawRobot(Graphics& graphics)
+VOID DrawRobot()
 {
+    assert(graphics);
+
     for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
     {
         RectF rc(viewZoom * (viewPos.X + it->x() - 1.0f),
@@ -886,18 +965,18 @@ VOID DrawRobot(Graphics& graphics)
         if (it->getBrushGroupID() != -1)
         {
             SolidBrush brush(color);
-            graphics.FillEllipse(&brush, rc);
+            graphics->FillEllipse(&brush, rc);
         }
 
         Pen pen(Color(192, color.GetR(), color.GetG(), color.GetB()));
-        graphics.DrawEllipse(&pen, rc);
+        graphics->DrawEllipse(&pen, rc);
     }
 }
 
-VOID DrawSelectedBushGroup(Graphics& graphics)
+VOID DrawSelectedBushGroup()
 {
-    if (!land)
-        return;
+    assert(land);
+    assert(graphics);
 
     if (-1 == cursorBushGroupID)
         return;
@@ -910,39 +989,43 @@ VOID DrawSelectedBushGroup(Graphics& graphics)
     SolidBrush solidBrush(drawData.GetZoneGenerationRes(it->second->zone()->generation()).color);
     const qtb::Area& area = it->second->overall();
     RectF rc(viewZoom * (viewPos.X + area.left), viewZoom * (viewPos.Y + area.bottom), viewZoom * area.width(), viewZoom * area.height());
-    graphics.FillRectangle(&solidBrush, rc);
+    graphics->FillRectangle(&solidBrush, rc);
 }
 
-VOID DrawMouseOperate(Graphics& graphics)
+VOID DrawMouseOperate()
 {
     if (!bLMouseDown)
         return;
+
+    assert(graphics);
 
     qtb::Area area;
     GetMouseArea(area);
 
     Pen pen(Color(192, 128, 128, 128));
     RectF rc(area.left, area.bottom, area.width(), area.height());
-    graphics.DrawRectangle(&pen, rc);
+    graphics->DrawRectangle(&pen, rc);
 }
 
-VOID DrawMask(Graphics& graphics)
+VOID DrawMask()
 {
+    assert(graphics);
+
     SolidBrush frameBrush(Color(64, 128, 128, 128));
     RectF rcTop((float)rcClient.left, (float)rcClient.top, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
-    graphics.FillRectangle(&frameBrush, rcTop);
+    graphics->FillRectangle(&frameBrush, rcTop);
     RectF rcBottom((float)rcClient.left, rcViewport.Y + rcViewport.Height, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
-    graphics.FillRectangle(&frameBrush, rcBottom);
+    graphics->FillRectangle(&frameBrush, rcBottom);
     RectF rcLeft((float)rcClient.left, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
-    graphics.FillRectangle(&frameBrush, rcLeft);
+    graphics->FillRectangle(&frameBrush, rcLeft);
     RectF rcRight(rcViewport.X + rcViewport.Width, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
-    graphics.FillRectangle(&frameBrush, rcRight);
+    graphics->FillRectangle(&frameBrush, rcRight);
 }
 
-VOID DrawTexts(Graphics& graphics)
+VOID DrawTexts()
 {
-    if (!land)
-        return;
+    assert(land);
+    assert(graphics);
 
     const qtb::Area& area = land->area();
     RectF rc(area.left, area.bottom, area.width(), area.height());
@@ -957,16 +1040,16 @@ VOID DrawTexts(Graphics& graphics)
     // fps
     PointF origin(10.0f, 10.0f);
     _sntprintf_s(string, 64, _T("fps: %d"), fps);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // land
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("land size: %d x %d"), (int)LAND_WIDTH, (int)LAND_HEIGHT);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("min zone size: %d"), (int)MIN_ZONE_SIZE);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
 #ifdef _WIN64
@@ -974,27 +1057,27 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("visible zone: %u"), visibleZone);
 #endif
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // view size
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("view size: %.2f,%.2f"), rcViewport.Width / viewZoom, rcViewport.Height / viewZoom);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // view pos
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // view scale
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("view zoom: %.2f"), viewZoom);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // static area count
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("static area: %d"), land->staticBushes().empty() ? 0 : STATIC_AREA_COUNT);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // static bush count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1003,7 +1086,7 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("static bush: %u"), land->staticBushes().size());
 #endif
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // dynamic bush count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1012,7 +1095,7 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("dynamic bush: %u"), land->bushes().size());
 #endif
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // bush group count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1021,55 +1104,55 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("bush group: %u"), land->bushGroups().size());
 #endif
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // generate static bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("rebuild time: %f"), dRebuildTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("rebuild time avg: %f"), dRebuildTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // create dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("create bush time: %f"), dCreateBushTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("create bush time avg: %f"), dCreateBushTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // remove dynamic bush
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("remove bush time: %f"), dRemoveBushTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("remove bush time avg: %f"), dRemoveBushTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // cursor hit
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("hit time: %f"), dBushCrossTime);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("hit time avg: %f"), dBushCrossTimeAvg);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // group in mouse
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("group in mouse: %d"), cursorBushGroupID);
     SolidBrush bushGroupBrush(drawData.GetBushGroupRes(cursorBushGroupID).color);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushGroupBrush);
 
     // bush in mouse
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("bush in mouse: %d"), cursorBushID);
     SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
 
     // robot count
     origin = origin + PointF(0.0f, 30.0f);
@@ -1078,6 +1161,6 @@ VOID DrawTexts(Graphics& graphics)
 #else
     _sntprintf_s(string, 64, _T("robot count: %u"), robotList.size());
 #endif
-    graphics.DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
 }

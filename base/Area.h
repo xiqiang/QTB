@@ -3,6 +3,7 @@
 
 #include <list>
 #include <map>
+#include "Util.h"
 
 namespace qtb
 {
@@ -50,6 +51,8 @@ namespace qtb
 		float	right;
 		float	bottom;
 		float	top;
+
+		QTB_OVERLOAD_BLOCK
 	};
 
 	typedef std::list<Area>		AreaList;

@@ -1,6 +1,7 @@
 #include <cassert>
 #include "BushGroup.h"
 #include "Land.h"
+#include "Util.h"
 
 namespace qtb
 {
@@ -10,12 +11,17 @@ namespace qtb
 	{
 	}
 
+	BushGroup::~BushGroup()
+	{
+	}
+
 	bool BushGroup::overlap(const Bush& bush) const
 	{
 		if (!m_overall.overlap(bush.overall()))
 			return false;
 
-		for (BushPMap::const_iterator it = m_bushes.begin(); it != m_bushes.end(); ++it)
+		BushPMap::const_iterator itEnd = m_bushes.end();
+		for (BushPMap::const_iterator it = m_bushes.begin(); it != itEnd; ++it)
 		{
 			assert(it->second);
 			if (it->second->overlap(bush))
@@ -29,7 +35,9 @@ namespace qtb
 		if (!m_overall.contains(x, y))
 			return false;
 
-		for (BushPMap::const_iterator it = m_bushes.begin(); it != m_bushes.end(); ++it) {
+		BushPMap::const_iterator itEnd = m_bushes.end();
+		for (BushPMap::const_iterator it = m_bushes.begin(); it != itEnd; ++it)
+		{
 			const Bush* bush = it->second;
 			assert(bush);
 			if (bush->contains(x, y))
@@ -42,14 +50,26 @@ namespace qtb
 		return false;
 	}
 
-	void BushGroup::add(Bush* bush)
+	bool BushGroup::add(Bush* bush)
 	{
 		assert(bush);
 		assert(m_bushes.find(bush->id()) == m_bushes.end());
 
-		const Area& bushArea = bush->overall();
+		bool first = m_bushes.empty();
+		try
+		{
+			QTB_RAND_BAD_ALLOC(1);
+			std::pair<BushPMap::iterator, bool> ret = m_bushes.insert(
+				std::pair<unsigned int, Bush*>(bush->id(), bush));
+		}
+		catch (std::bad_alloc&)
+		{
+			qtbLog("bad_alloc: BushGroup::add\n");
+			return false;
+		}
 
-		if (m_bushes.empty())
+		const Area& bushArea = bush->overall();
+		if (first)
 		{
 			m_overall = bushArea;
 		}
@@ -65,40 +85,67 @@ namespace qtb
 				m_overall.top = bushArea.top;
 		}
 
-		m_bushes[bush->id()] = bush;
 		bush->m_group = this;
+		return true;
 	}
 
 	void BushGroup::remove(unsigned int bushID)
 	{
 		BushPMap::iterator it = m_bushes.find(bushID);
 		assert(it != m_bushes.end());
-		assert(it->second);
-		assert(it->second->group() == this);
+		Bush* bush = it->second;
+		assert(bush);
+		assert(bush->m_group == this);
 		m_bushes.erase(it);
 	}
 
-	void BushGroup::splice(BushGroup& other)
+	bool BushGroup::splice(BushGroup& other)
 	{
-		const Area& area = other.overall();
-		if (m_overall.left > area.left)
-			m_overall.left = area.left;
-		if (m_overall.right < area.right)
-			m_overall.right = area.right;
-		if (m_overall.bottom > area.bottom)
-			m_overall.bottom = area.bottom;
-		if (m_overall.top < area.top)
-			m_overall.top = area.top;
+		BushPMap::const_iterator itOtherBegin = other.m_bushes.begin();
+		BushPMap::const_iterator itOtherEnd = other.m_bushes.end();
 
-		for (BushPMap::iterator it = other.m_bushes.begin(); it != other.m_bushes.end(); ++it)
+		try
 		{
-			assert(it->second);
-			assert(it->second->group() == &other);
-			it->second->m_group = this;
+			QTB_RAND_BAD_ALLOC(1);
+			m_bushes.insert(itOtherBegin, itOtherEnd);
+		}
+		catch (std::bad_alloc&)
+		{
+			qtbLog("bad_alloc: BushGroup::splice\n");
+			return false;
 		}
 
-		m_bushes.insert(other.m_bushes.begin(), other.m_bushes.end());
+		const Area& otherOverall = other.overall();
+		if (m_overall.left > otherOverall.left)
+			m_overall.left = otherOverall.left;
+		if (m_overall.right < otherOverall.right)
+			m_overall.right = otherOverall.right;
+		if (m_overall.bottom > otherOverall.bottom)
+			m_overall.bottom = otherOverall.bottom;
+		if (m_overall.top < otherOverall.top)
+			m_overall.top = otherOverall.top;
+
+		for (BushPMap::const_iterator it = itOtherBegin; it != itOtherEnd; ++it)
+		{
+			Bush* bush = it->second;
+			assert(bush);
+			assert(bush->m_group == &other);
+			bush->m_group = this;
+		}
+
 		other.m_bushes.clear();
+		return true;
+	}
+
+	void BushGroup::releaseBushes()
+	{
+		BushPMap::const_iterator itEnd = m_bushes.end();
+		for (BushPMap::const_iterator it = m_bushes.begin(); it != itEnd; ++it)
+		{
+			Bush* bush = it->second;
+			assert(bush->m_group == this);
+			bush->m_group = NULL;
+		}
 	}
 
 }
