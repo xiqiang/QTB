@@ -135,7 +135,8 @@ public:
 
 		if (!value)
 		{
-			for(BushInfoMap::iterator it = m_bushInfos.begin(); it != m_bushInfos.end(); ++it)
+			BushInfoMap::const_iterator itEnd = m_bushInfos.end();
+			for(BushInfoMap::const_iterator it = m_bushInfos.begin(); it != itEnd; ++it)
 				RemoveBush(land, it->first);
 			m_bushInfos.clear();
 		}

@@ -443,7 +443,8 @@ namespace qtb
 
 	void Land::clearBushMap(BushPMap& bushMap)
 	{
-		for (BushPMap::iterator it = bushMap.begin(); it != bushMap.end(); ++it)
+		BushPMap::const_iterator itEnd = bushMap.end();
+		for (BushPMap::const_iterator it = bushMap.begin(); it != itEnd; ++it)
 		{
 			Bush* bush = it->second;
 			assert(bush);
@@ -454,7 +455,8 @@ namespace qtb
 
 	void Land::clearBushGroupMap(BushGroupPMap& bushGroupMap)
 	{
-		for (BushGroupPMap::iterator it = bushGroupMap.begin(); it != bushGroupMap.end(); ++it)
+		BushGroupPMap::const_iterator itEnd = bushGroupMap.end();
+		for (BushGroupPMap::const_iterator it = bushGroupMap.begin(); it != itEnd; ++it)
 		{
 			BushGroup* group = it->second;
 			assert(group);

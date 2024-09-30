@@ -642,7 +642,8 @@ VOID InitRobot()
 
     if (land)
     {
-        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+        std::list<Robot>::iterator itEnd = robotList.end();
+        for (std::list<Robot>::iterator it = robotList.begin(); it != itEnd; ++it)
             it->Init(land->area());
     }
 
@@ -653,7 +654,8 @@ VOID EnableRobotBush(BOOL value)
 {
     if (land)
     {
-        for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+        std::list<Robot>::iterator itEnd = robotList.end();
+        for (std::list<Robot>::iterator it = robotList.begin(); it != itEnd; ++it)
             it->EnableBush(land, value);
     }
 }
@@ -762,10 +764,13 @@ VOID RobotTick(float appTime)
     if (!bEnableRobot)
         return;
 
-    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    std::list<Robot>::iterator itBegin = robotList.begin();
+    std::list<Robot>::iterator itEnd = robotList.end();
+
+    for (std::list<Robot>::iterator it = itBegin; it != itEnd; ++it)
         it->Tick(land, appTime);
 
-    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    for (std::list<Robot>::iterator it = itBegin; it != itEnd; ++it)
     {
         unsigned int bushGroupID = -1;
         unsigned int bushID = -1;
@@ -890,7 +895,8 @@ VOID DrawZones()
     land->layer(area, viewZoneList);
     visibleZone = viewZoneList.size();
 
-    for (std::list<qtb::QTree*>::const_iterator itZone = viewZoneList.begin(); itZone != viewZoneList.end(); ++itZone)
+    std::list<qtb::QTree*>::const_iterator itZoneEnd = viewZoneList.end();
+    for (std::list<qtb::QTree*>::const_iterator itZone = viewZoneList.begin(); itZone != itZoneEnd; ++itZone)
     {
         const qtb::Zone* zone = dynamic_cast<qtb::Zone*>(*itZone);
 
@@ -902,7 +908,8 @@ VOID DrawZones()
         }
 
         const qtb::BushGroupPMap& boundBushGroups = zone->boundBushGroups();
-        for (qtb::BushGroupPMap::const_iterator itGroup = boundBushGroups.begin(); itGroup != boundBushGroups.end(); ++itGroup)
+        qtb::BushGroupPMap::const_iterator itGroupEnd = boundBushGroups.end();
+        for (qtb::BushGroupPMap::const_iterator itGroup = boundBushGroups.begin(); itGroup != itGroupEnd; ++itGroup)
         {
             const qtb::BushGroup* bushGroup = itGroup->second;
             const qtb::Area& groupArea = bushGroup->overall();
@@ -911,7 +918,8 @@ VOID DrawZones()
                 continue;
 
             const qtb::BushPMap& bushes = bushGroup->bushes();
-            for (qtb::BushPMap::const_iterator itBush = bushes.begin(); itBush != bushes.end(); ++itBush)
+            qtb::BushPMap::const_iterator itBushEnd = bushes.end();
+            for (qtb::BushPMap::const_iterator itBush = bushes.begin(); itBush != itBushEnd; ++itBush)
             {
                 const qtb::Bush* bush = itBush->second;
                 const qtb::Area& area = bush->overall();
@@ -925,7 +933,8 @@ VOID DrawZones()
                     if (bViewStaticAreas)
                     {
                         const qtb::AreaList& areaList = bush->areas();
-                        for (qtb::AreaList::const_iterator itArea = areaList.begin(); itArea != areaList.end(); ++itArea)
+                        qtb::AreaList::const_iterator itAreaEnd = areaList.end();
+                        for (qtb::AreaList::const_iterator itArea = areaList.begin(); itArea != itAreaEnd; ++itArea)
                         {
                             RectF rcArea(viewZoom * (viewPos.X + itArea->left), viewZoom * (viewPos.Y + itArea->bottom), viewZoom * itArea->width(), viewZoom * itArea->height());
                             if (rcViewport.IntersectsWith(rcArea))
@@ -962,7 +971,8 @@ VOID DrawRobot()
 {
     assert(graphics);
 
-    for (std::list<Robot>::iterator it = robotList.begin(); it != robotList.end(); ++it)
+    std::list<Robot>::iterator itEnd = robotList.end();
+    for (std::list<Robot>::iterator it = robotList.begin(); it != itEnd; ++it)
     {
         RectF rc(viewZoom * (viewPos.X + it->x() - 1.0f),
             viewZoom * (viewPos.Y + it->y() - 1.0f),
