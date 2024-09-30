@@ -244,6 +244,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWndMain, nCmdShow);
    UpdateWindow(hWndMain);
 
+   appTime = GetTickCount64() / 1000.0f;
+   initFrameTime = appTime;
+
    InitLand();
    InitRobot();
    ResetViewport(hWndMain);
@@ -313,6 +316,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_VIEW_RESETAVG:
                 {
+                    appTime = GetTickCount64() / 1000.0f;
+                    initFrameTime = appTime;
+                    frameCountTotal = 0;
+
                     nCreateBushCount = 0;
                     dCreateBushTime = 0;
                     dCreateBushTimeTotal = 0;
@@ -705,18 +712,22 @@ VOID RandomDynamicBush()
 
 VOID OnUpdate()
 {
-    float appTime = GetTickCount64() / 1000.0f;
+    appTime = GetTickCount64() / 1000.0f;
 
     RobotTick(appTime);
     MouseBushHit();
 
-    if (appTime - lastFrameTime < 1.0f)
+    ++frameCountTotal;
+    fpsAvg = frameCountTotal / (appTime - initFrameTime);
+
+    float elapseTime = appTime - lastFrameTime;
+    if (elapseTime < 1.0f)
     {
         ++frameCount;
     }
     else
     {
-        fps = frameCount;
+        fps = frameCount / elapseTime;
         frameCount = 0;
         lastFrameTime = appTime;
     }
@@ -1039,7 +1050,11 @@ VOID DrawTexts()
 
     // fps
     PointF origin(10.0f, 10.0f);
-    _sntprintf_s(string, 64, _T("fps: %d"), fps);
+    _sntprintf_s(string, 64, _T("fps: %.2f"), fps);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("fps avg: %.2f"), fpsAvg);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     // land

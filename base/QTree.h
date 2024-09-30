@@ -98,19 +98,27 @@ namespace qtb
 			return m_children[(ix << 1) | iy];
 		}
 
-		QTree* locate(const Area& area) {
+		QTree* deepLocate(const Area& area) {
 			QTree* c = child(area.x(), area.y());
 			if (c && c->area().contains(area))
-				return c->locate(area);
+				return c->deepLocate(area);
+			else
+				return this;
+		}
+
+		QTree* locate(float x, float y) {
+			QTree* c = child(x, y);
+			if (c && !c->empty() && c->area().contains(x, y))
+				return c->locate(x, y);
 			else
 				return this;
 		}
 
 		bool layer(const Area& area, std::list<QTree*>& list) {
-			if (!m_area.overlap(area))
+			if (empty())
 				return true;
 
-			if (!layerTest())
+			if (!m_area.overlap(area))
 				return true;
 			
 			try
@@ -144,7 +152,7 @@ namespace qtb
 
 	protected:
 		virtual QTree*	newChild(const Area& area) = 0;
-		virtual bool	layerTest() const { return true; }
+		virtual bool	empty() const { return false; }
 
 	protected:
 		Area			m_area;

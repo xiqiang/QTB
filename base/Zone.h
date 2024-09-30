@@ -17,11 +17,12 @@ namespace qtb
 
 	public:
 		bool					bushContains(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
+		bool					bushContainsRev(float x, float y, unsigned int* bushGroupID = NULL, unsigned int* bushID = NULL);
 		const BushGroupPMap&	boundBushGroups() const { return m_boundBushGroups; }
 
 	protected:
 		virtual QTree*			newChild(const Area& area);
-		virtual bool			layerTest() const { return !m_boundBushGroups.empty() || m_childBindCount > 0; }
+		virtual bool			empty() const { return 0 == m_childBindCount && m_boundBushGroups.empty(); }
 
 	private:
 		bool					bindBushGroup(BushGroup* group);

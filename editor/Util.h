@@ -27,9 +27,13 @@ double      dBushCrossTime = 0;
 double      dBushCrossTimeTotal = 0;
 double      dBushCrossTimeAvg = 0;
 
+float       appTime = 0;
 float       lastFrameTime = 0;
+float       initFrameTime = 0;
 int         frameCount = 0;
-int         fps = 0;
+int         frameCountTotal = 0;
+float       fps = 0;
+float       fpsAvg = 0;
 
 int RangeRand(int min, int max)
 {
@@ -85,7 +89,7 @@ bool BushContains(qtb::Land* land, float x, float y, unsigned int* bushGroupID =
     bool ret = false;
 
     perfTool.Start();
-    ret = land->bushContains(x, y, bushGroupID, bushID);
+    ret = land->bushTest(x, y, bushGroupID, bushID);
     dBushCrossTime = perfTool.End();
 
     dBushCrossTimeTotal += dBushCrossTime;

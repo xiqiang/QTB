@@ -42,6 +42,19 @@ namespace qtb
 		return false;
 	}
 
+	bool Zone::bushContainsRev(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
+	{
+		assert(m_area.contains(x, y));
+		if (!m_boundBushGroups.empty() && _bushContains(x, y, bushGroupID, bushID))
+			return true;
+
+		Zone* parent = dynamic_cast<Zone*>(m_parent);
+		if(parent)
+			return parent->bushContainsRev(x, y, bushGroupID, bushID);
+
+		return false;
+	}
+
 	bool Zone::bindBushGroup(BushGroup* group)
 	{
 		assert(group);

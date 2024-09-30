@@ -129,6 +129,14 @@ namespace qtb
 		return ret;
 	}
 
+	bool Land::bushTest(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
+	{
+		Zone* zone = dynamic_cast<Zone*>(locate(x, y));
+		assert(zone);
+		return zone->bushContainsRev(x, y, bushGroupID, bushID);
+		//return bushContains(x, y, bushGroupID, bushID);
+	}
+
 	bool Land::generateBushMap(const AreaList& areaMap, BushPMap& bushMap)
 	{
 		assert(bushMap.empty());
@@ -305,7 +313,7 @@ namespace qtb
 	{
 		assert(group->zone() == NULL);
 
-		Zone* zone = dynamic_cast<Zone*>(locate(group->overall()));
+		Zone* zone = dynamic_cast<Zone*>(deepLocate(group->overall()));
 		assert(zone);
 		return zone->bindBushGroup(group);
 	}
