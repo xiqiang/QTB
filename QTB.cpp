@@ -72,9 +72,9 @@ PointF              viewPos;
 
 size_t              visibleZone = 0;
 
-BOOL                bLMouseDown = FALSE;
-BOOL                bRMouseDown = FALSE;
-BOOL                bMMouseDown = FALSE;
+bool                bLMouseDown = false;
+bool                bRMouseDown = false;
+bool                bMMouseDown = false;
 Point               mouseDownPosL;
 Point               mouseUpPosL;
 Point               mouseDownPosM;
@@ -84,17 +84,17 @@ PointF              cursorScalePos;
 unsigned int        cursorBushGroupID = -1;
 unsigned int        cursorBushID = -1;
 
-BOOL                bViewQTree = TRUE;
-BOOL                bViewStaticAreas = TRUE;
-BOOL                bViewStaticBush = FALSE;
-BOOL                bViewDynamicBush = TRUE;
-BOOL                bViewBushGroup = FALSE;
-BOOL                bViewSelectedBushGroup = TRUE;
-BOOL                bViewMask = TRUE;
+bool                bViewQTree = true;
+bool                bViewStaticAreas = true;
+bool                bViewStaticBush = false;
+bool                bViewDynamicBush = true;
+bool                bViewBushGroup = false;
+bool                bViewSelectedBushGroup = true;
+bool                bViewMask = true;
 
-BOOL                bEnableRobot = TRUE;
-BOOL                bViewRobot = TRUE;
-BOOL                bRobotAutoBush = TRUE;
+bool                bEnableRobot = true;
+bool                bViewRobot = true;
+bool                bRobotAutoBush = true;
 
 int                 nRebuildCount = 0;
 double              dRebuildTime = 0;
@@ -114,7 +114,7 @@ VOID                UpdateViewportRect(HWND hWnd);
 VOID                InitLand();
 VOID                TermLand();
 VOID                InitRobot();
-VOID                EnableRobotBush(BOOL value);
+VOID                EnableRobotBush(bool value);
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
 
@@ -434,14 +434,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             mouseDownPosL.X = GET_X_LPARAM(lParam);
             mouseDownPosL.Y = GET_Y_LPARAM(lParam);
-            bLMouseDown = TRUE;
+            bLMouseDown = true;
         }
         break;
     case WM_LBUTTONUP:
         {
             mouseUpPosL.X = GET_X_LPARAM(lParam);
             mouseUpPosL.Y = GET_Y_LPARAM(lParam);
-            bLMouseDown = FALSE;
+            bLMouseDown = false;
 
             if (land)
             {
@@ -462,7 +462,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_RBUTTONDOWN:
         {
-            bRMouseDown = TRUE;
+            bRMouseDown = true;
 
             if (cursorBushID != -1)
             {
@@ -473,7 +473,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_RBUTTONUP:
         {
-            bRMouseDown = FALSE;
+            bRMouseDown = false;
         }
         break;
 
@@ -482,7 +482,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             mouseDownPosM.X = GET_X_LPARAM(lParam);
             mouseDownPosM.Y = GET_Y_LPARAM(lParam);
             viewPosCache = viewPos;
-            bMMouseDown = TRUE;
+            bMMouseDown = true;
 
         }
         break;
@@ -491,7 +491,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             mouseUpPosM.X = GET_X_LPARAM(lParam);
             mouseUpPosM.Y = GET_Y_LPARAM(lParam);
 
-            bMMouseDown = FALSE;
+            bMMouseDown = false;
         }
         break;
     case WM_MOUSEMOVE:
@@ -650,7 +650,7 @@ VOID InitRobot()
     EnableRobotBush(bRobotAutoBush);
 }
 
-VOID EnableRobotBush(BOOL value)
+VOID EnableRobotBush(bool value)
 {
     if (land)
     {
@@ -1023,24 +1023,13 @@ VOID DrawMouseOperate()
     qtb::Area area;
     GetMouseArea(area);
 
-    Pen pen(Color(192, 128, 128, 128));
-    RectF rc(area.left, area.bottom, area.width(), area.height());
-    graphics->DrawRectangle(&pen, rc);
 }
 
 VOID DrawMask()
 {
     assert(graphics);
-
-    SolidBrush frameBrush(Color(64, 128, 128, 128));
-    RectF rcTop((float)rcClient.left, (float)rcClient.top, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
-    graphics->FillRectangle(&frameBrush, rcTop);
-    RectF rcBottom((float)rcClient.left, rcViewport.Y + rcViewport.Height, (float)rcClient.right - rcClient.left, rcViewport.Y - rcClient.top);
-    graphics->FillRectangle(&frameBrush, rcBottom);
-    RectF rcLeft((float)rcClient.left, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
-    graphics->FillRectangle(&frameBrush, rcLeft);
-    RectF rcRight(rcViewport.X + rcViewport.Width, rcViewport.Y, rcViewport.X - rcClient.left, rcViewport.Height);
-    graphics->FillRectangle(&frameBrush, rcRight);
+    Pen pen(Color::Black);
+    graphics->DrawRectangle(&pen, rcViewport);
 }
 
 VOID DrawTexts()
