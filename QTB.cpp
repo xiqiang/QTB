@@ -27,20 +27,20 @@ using namespace Gdiplus;
 #define MAX_LOADSTRING 100
 
 #ifdef _DEBUG
-const float LAND_WIDTH = 1000.0f;
-const float LAND_HEIGHT = 1000.0f;
-const float MIN_ZONE_SIZE = 10.0f;
-const int   STATIC_AREA_COUNT = 5000;
-const int   DYNAMIC_AREA_COUNT = 2500;
-const int   ROBOT_COUNT = 1000;
+const int   LAND_WIDTH      = 1000;
+const int   LAND_HEIGHT     = 1000;
 #else
-const float LAND_WIDTH              = 2000.0f;
-const float LAND_HEIGHT             = 2000.0f;
-const float MIN_ZONE_SIZE           = 10.0f;
-const int   STATIC_AREA_COUNT       = 20000;
-const int   DYNAMIC_AREA_COUNT      = 10000;
-const int   ROBOT_COUNT             = 5000;
+const int   LAND_WIDTH      = 3000;
+const int   LAND_HEIGHT     = 3000;
 #endif
+
+const int   MIN_ZONE_SIZE   = 10;
+const int   PER_ROBOT_AREA  = 1500;
+const int   PER_BUSH_AREA   = 500;
+
+#define STATIC_AREA_COUNT   (LAND_WIDTH * LAND_HEIGHT / PER_BUSH_AREA)
+#define ROBOT_COUNT         (LAND_WIDTH * LAND_HEIGHT / PER_ROBOT_AREA)
+#define DYNAMIC_AREA_COUNT  (STATIC_AREA_COUNT >> 1)
 
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
@@ -605,7 +605,7 @@ VOID InitLand()
 {
     srand((unsigned int)time(NULL));
 
-    qtb::Area area(0, LAND_WIDTH, 0, LAND_HEIGHT);
+    qtb::Area area(0, (float)LAND_WIDTH, 0, (float)LAND_HEIGHT);
 
     try
     {
@@ -620,7 +620,7 @@ VOID InitLand()
         return;
     }
 
-    land->devide(MIN_ZONE_SIZE);
+    land->devide((float)MIN_ZONE_SIZE);
 
     RandomStaticBush();
     //RandomDynamicBush();
@@ -1058,11 +1058,11 @@ VOID DrawTexts()
 
     // land
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("land size: %d x %d"), (int)LAND_WIDTH, (int)LAND_HEIGHT);
+    _sntprintf_s(string, 64, _T("land size: %d x %d"), LAND_WIDTH, LAND_HEIGHT);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("min zone size: %d"), (int)MIN_ZONE_SIZE);
+    _sntprintf_s(string, 64, _T("min zone size: %d"), MIN_ZONE_SIZE);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
