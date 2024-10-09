@@ -15,7 +15,7 @@
 #include "framework.h"
 #include "QTB.h"
 #include "base/Land.h"
-#include "base/Util.h"
+#include "base/Debug.h"
 #include "editor/Util.h"
 #include "editor/DrawData.h"
 #include "editor/PerfTool.h"
@@ -27,16 +27,13 @@ using namespace Gdiplus;
 #define MAX_LOADSTRING 100
 
 #ifdef _DEBUG
-const int   LAND_WIDTH      = 1000;
-const int   LAND_HEIGHT     = 1000;
+const int   LAND_WIDTH      = 2000;
+const int   LAND_HEIGHT     = 2000;
 #else
-const int   LAND_WIDTH      = 3000;
-const int   LAND_HEIGHT     = 3000;
+const int   LAND_WIDTH      = 4000;
+const int   LAND_HEIGHT     = 4000;
 #endif
-
 const int   MIN_ZONE_SIZE   = 10;
-const int   PER_ROBOT_AREA  = 1500;
-const int   PER_BUSH_AREA   = 500;
 
 #define STATIC_AREA_COUNT   (LAND_WIDTH * LAND_HEIGHT / PER_BUSH_AREA)
 #define ROBOT_COUNT         (LAND_WIDTH * LAND_HEIGHT / PER_ROBOT_AREA)
@@ -90,10 +87,11 @@ bool                bViewStaticBush = false;
 bool                bViewDynamicBush = true;
 bool                bViewBushGroup = false;
 bool                bViewSelectedBushGroup = true;
+bool                bViewRobot = true;
 bool                bViewMask = true;
 
 bool                bEnableRobot = true;
-bool                bViewRobot = true;
+bool                bRobotRandMove = true;
 bool                bRobotAutoBush = true;
 
 int                 nRebuildCount = 0;
@@ -114,6 +112,7 @@ VOID                UpdateViewportRect(HWND hWnd);
 VOID                InitLand();
 VOID                TermLand();
 VOID                InitRobot();
+VOID                EnableRobotMove(bool value);
 VOID                EnableRobotBush(bool value);
 VOID                RandomStaticBush();
 VOID                RandomDynamicBush();
@@ -397,6 +396,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CheckMenuItem(hmenuBar, ID_VIEW_ROBOT, MF_BYCOMMAND | check);
                 }
                 break;
+            case ID_ROBOT_RANDMOVE:
+                {
+                    bRobotRandMove = !bRobotRandMove;
+                    UINT check = bRobotRandMove ? MF_CHECKED : MF_UNCHECKED;
+                    CheckMenuItem(hmenuBar, ID_ROBOT_RANDMOVE, MF_BYCOMMAND | check);
+
+                    EnableRobotMove(bRobotRandMove);
+                }
+                break;
             case ID_ROBOT_AUTOBUSH:
                 {
                     bRobotAutoBush = !bRobotAutoBush;
@@ -647,7 +655,15 @@ VOID InitRobot()
             it->Init(land->area());
     }
 
+    EnableRobotMove(bRobotRandMove);
     EnableRobotBush(bRobotAutoBush);
+}
+
+VOID EnableRobotMove(bool value)
+{
+    std::list<Robot>::iterator itEnd = robotList.end();
+    for (std::list<Robot>::iterator it = robotList.begin(); it != itEnd; ++it)
+        it->EnableMove(value);
 }
 
 VOID EnableRobotBush(bool value)
@@ -892,7 +908,7 @@ VOID DrawZones()
         (rcViewport.Y + rcViewport.Height) * (1 / viewZoom) - viewPos.Y);
 
     std::list<qtb::QTree*> viewZoneList;
-    land->layer(area, viewZoneList);
+    land->layer(area, viewZoneList, false);
     visibleZone = viewZoneList.size();
 
     std::list<qtb::QTree*>::const_iterator itZoneEnd = viewZoneList.end();
@@ -1023,6 +1039,9 @@ VOID DrawMouseOperate()
     qtb::Area area;
     GetMouseArea(area);
 
+    Pen pen(Color(160, 112, 216, 0));
+    RectF rc(area.left, area.bottom, area.width(), area.height());
+    graphics->DrawRectangle(&pen, rc);
 }
 
 VOID DrawMask()

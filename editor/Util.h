@@ -10,6 +10,9 @@ const float PI2 = PI * 2;
 const float AREA_SIZE_MIN = 1.0f;
 const float AREA_SIZE_MAX = 5.0f;
 
+const int   PER_ROBOT_AREA = 2000;
+const int   PER_BUSH_AREA = 1000;
+
 PerfTool    perfTool;
 
 int         nCreateBushCount = 0;

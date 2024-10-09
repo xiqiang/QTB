@@ -1,6 +1,6 @@
 #include <cassert>
 #include "Zone.h"
-#include "Util.h"
+#include "Debug.h"
 
 namespace qtb
 {
@@ -44,7 +44,6 @@ namespace qtb
 
 	bool Zone::bushContainsRev(float x, float y, unsigned int* bushGroupID /*= NULL*/, unsigned int* bushID /*= NULL*/)
 	{
-		assert(m_area.contains(x, y));
 		if (!m_boundBushGroups.empty() && _bushContains(x, y, bushGroupID, bushID))
 			return true;
 

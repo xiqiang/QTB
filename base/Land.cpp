@@ -1,7 +1,7 @@
 #include <cassert>
 #include <vector>
 #include "Land.h"
-#include "Util.h"
+#include "Debug.h"
 
 namespace qtb
 {
@@ -133,6 +133,9 @@ namespace qtb
 	{
 		Zone* zone = dynamic_cast<Zone*>(locate(x, y));
 		assert(zone);
+		if (!zone->m_area.contains(x, y))
+			return false;
+
 		return zone->bushContainsRev(x, y, bushGroupID, bushID);
 		//return bushContains(x, y, bushGroupID, bushID);
 	}
@@ -220,7 +223,7 @@ namespace qtb
 		assert(bush);
 
 		std::list<QTree*> treeList;
-		if (!layer(bush->overall(), treeList) || treeList.empty())
+		if (!layer(bush->overall(), treeList, true) || treeList.empty())
 			return NULL;
 
 		std::vector<unsigned> collisions;

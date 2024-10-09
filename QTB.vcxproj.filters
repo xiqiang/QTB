@@ -63,7 +63,7 @@
     <ClInclude Include="editor\Robot.h">
       <Filter>editor</Filter>
     </ClInclude>
-    <ClInclude Include="base\Util.h">
+    <ClInclude Include="base\Debug.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

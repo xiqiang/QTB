@@ -4,7 +4,7 @@
 #include <list>
 #include <cassert>
 #include "Area.h"
-#include "Util.h"
+#include "Debug.h"
 
 namespace qtb 
 {
@@ -114,8 +114,8 @@ namespace qtb
 				return this;
 		}
 
-		bool layer(const Area& area, std::list<QTree*>& list) {
-			if (empty())
+		bool layer(const Area& area, std::list<QTree*>& list, bool includeEmpty) {
+			if (!includeEmpty && empty())
 				return true;
 
 			if (!m_area.overlap(area))
@@ -135,16 +135,16 @@ namespace qtb
 			if (!m_hasChild)
 				return true;
 
-			if (m_children[LB] && !m_children[LB]->layer(area, list))
+			if (m_children[LB] && !m_children[LB]->layer(area, list, includeEmpty))
 				return false;
 
-			if (m_children[LT] && !m_children[LT]->layer(area, list))
+			if (m_children[LT] && !m_children[LT]->layer(area, list, includeEmpty))
 				return false;
 
-			if (m_children[RB] && !m_children[RB]->layer(area, list))
+			if (m_children[RB] && !m_children[RB]->layer(area, list, includeEmpty))
 				return false;
 
-			if (m_children[RT] && !m_children[RT]->layer(area, list))
+			if (m_children[RT] && !m_children[RT]->layer(area, list, includeEmpty))
 				return false;
 
 			return true;

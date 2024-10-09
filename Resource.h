@@ -32,6 +32,7 @@
 #define ID_VIEW_ROBOT32795              32795
 #define ID_ENABLE_ROBOT                 32796
 #define ID_VIEW_MASK                    32797
+#define ID_ROBOT_RANDMOVE               32798
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -40,7 +41,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        129
-#define _APS_NEXT_COMMAND_VALUE         32798
+#define _APS_NEXT_COMMAND_VALUE         32799
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

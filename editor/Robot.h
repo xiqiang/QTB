@@ -11,11 +11,14 @@ const float ROBOT_SPEED_MAX = 10.0f;
 const float MOVE_TIME_MIN = 2.0f;
 const float MOVE_TIME_MAX = 5.0f;
 
-const float BUSH_TIME_MIN = 1.0f;
-const float BUSH_TIME_MAX = 4.0f;
+const float BUSH_TIME_MIN = 2.0f;
+const float BUSH_TIME_MAX = 5.0f;
+const float BUSH_COUNT_PER_SEC = 1 / ((BUSH_TIME_MIN + BUSH_TIME_MAX) * 0.5f);
 
-const float BUSH_LIVE_MIN = 5.0f;
-const float BUSH_LIVE_MAX = 10.0f;
+const float BUSH_LIVE_AVG = (float)PER_ROBOT_AREA / PER_BUSH_AREA / BUSH_COUNT_PER_SEC;
+const float BUSH_LIVE_MIN = BUSH_LIVE_AVG * 0.5f;
+const float BUSH_LIVE_MAX = BUSH_LIVE_AVG * 1.5f;
+
 
 class Robot
 {
@@ -36,13 +39,14 @@ public:
 		, m_y(0.0f)
 		, m_dir(0.0f)
 		, m_speed(0.0f)
+		, m_updateTime(0.0f)
+		, m_randMove(false)
 		, m_moveTime(0.0f)
 		, m_moveTimeTotal(0.0f)
+		, m_autoBush(false)
+		, m_bushGroupID(-1)
 		, m_bushTime(0.0f)
 		, m_bushTimeTotal(0.0f)
-		, m_updateTime(0.0f)
-		, m_bushGroupID(-1)
-		, m_autoBush(false)
 	{
 	}
 
@@ -90,25 +94,29 @@ public:
 
 		float deltaTime = time - m_updateTime;
 		m_updateTime = time;
-		m_moveTime += deltaTime;
-		m_bushTime += deltaTime;
 
-		float x = (float)(m_speed * cos(m_dir));
-		float y = (float)(m_speed * sin(m_dir));
-		float nx = m_x + x * deltaTime;
-		float ny = m_y + y * deltaTime;
-		if (!m_area.contains(nx, ny) || m_moveTime >= m_moveTimeTotal)
+		if (m_randMove)
 		{
-			StartRoam();
-		}
-		else
-		{
-			m_x = nx;
-			m_y = ny;
+			m_moveTime += deltaTime;
+
+			float x = (float)(m_speed * cos(m_dir));
+			float y = (float)(m_speed * sin(m_dir));
+			float nx = m_x + x * deltaTime;
+			float ny = m_y + y * deltaTime;
+			if (!m_area.contains(nx, ny) || m_moveTime >= m_moveTimeTotal)
+			{
+				StartRoam();
+			}
+			else
+			{
+				m_x = nx;
+				m_y = ny;
+			}
 		}
 
 		if (m_autoBush)
 		{
+			m_bushTime += deltaTime;
 			if (m_bushTime >= m_bushTimeTotal)
 				CreateBush(land);
 
@@ -127,6 +135,11 @@ public:
 				}
 			}
 		}
+	}
+
+	void EnableMove(bool value)
+	{
+		m_randMove = value;
 	}
 
 	void EnableBush(qtb::Land* land, bool value)
@@ -149,17 +162,17 @@ private:
 	float			m_y;
 	float			m_dir;
 	float			m_speed;
-
-	float			m_moveTime;
-	float			m_moveTimeTotal;
 	float			m_updateTime;
 
-	unsigned int	m_bushGroupID;
-	BushInfoMap		m_bushInfos;
-	bool			m_autoBush;
+	bool			m_randMove;
+	float			m_moveTime;
+	float			m_moveTimeTotal;
 
+	bool			m_autoBush;
+	unsigned int	m_bushGroupID;
 	float			m_bushTime;
 	float			m_bushTimeTotal;
+	BushInfoMap		m_bushInfos;
 };
 
 #endif
