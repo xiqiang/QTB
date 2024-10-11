@@ -39,6 +39,12 @@ const int   MIN_ZONE_SIZE   = 10;
 #define ROBOT_COUNT         (LAND_WIDTH * LAND_HEIGHT / PER_ROBOT_AREA)
 #define DYNAMIC_AREA_COUNT  (STATIC_AREA_COUNT >> 1)
 
+const int ZONE_VIEW_QTREE       = 1 << 0;
+const int ZONE_VIEW_STATICAREAS = 1 << 1;
+const int ZONE_VIEW_STATICBUSH  = 1 << 2;
+const int ZONE_VIEW_DYNAMICBUSH = 1 << 3;
+const int ZONE_VIEW_BUSHGROUP   = 1 << 4;
+
 // 全局变量:
 HINSTANCE hInst;                                // 当前实例
 HWND hWndMain;
@@ -81,11 +87,7 @@ PointF              cursorScalePos;
 unsigned int        cursorBushGroupID = -1;
 unsigned int        cursorBushID = -1;
 
-bool                bViewQTree = true;
-bool                bViewStaticAreas = true;
-bool                bViewStaticBush = false;
-bool                bViewDynamicBush = true;
-bool                bViewBushGroup = false;
+int                 zoneViewFlag = ZONE_VIEW_QTREE | ZONE_VIEW_STATICAREAS | ZONE_VIEW_DYNAMICBUSH;
 bool                bViewSelectedBushGroup = true;
 bool                bViewRobot = true;
 bool                bViewMask = true;
@@ -342,29 +344,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_VIEW_QTREE:
                 {
-                    bViewQTree = !bViewQTree;
-                    UINT check = bViewQTree ? MF_CHECKED : MF_UNCHECKED;
+                    zoneViewFlag ^= ZONE_VIEW_QTREE;
+                    UINT check = (zoneViewFlag & ZONE_VIEW_QTREE) ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_QTREE, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_STATICAREAS:
                 {
-                    bViewStaticAreas = !bViewStaticAreas;
-                    UINT check = bViewStaticAreas ? MF_CHECKED : MF_UNCHECKED;
+                    zoneViewFlag ^= ZONE_VIEW_STATICAREAS;
+                    UINT check = (zoneViewFlag & ZONE_VIEW_STATICAREAS) ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_STATICAREAS, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_STATICBUSH:
                 {
-                    bViewStaticBush = !bViewStaticBush;
-                    UINT check = bViewStaticBush ? MF_CHECKED : MF_UNCHECKED;
+                    zoneViewFlag ^= ZONE_VIEW_STATICBUSH;
+                    UINT check = (zoneViewFlag & ZONE_VIEW_STATICBUSH) ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
                 }
                 break;
             case ID_VIEW_DYNAMICBUSH:
                 {
-                    bViewDynamicBush = !bViewDynamicBush;
-                    UINT check = bViewDynamicBush ? MF_CHECKED : MF_UNCHECKED;
+                    zoneViewFlag ^= ZONE_VIEW_DYNAMICBUSH;
+                    UINT check = (zoneViewFlag & ZONE_VIEW_DYNAMICBUSH) ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICBUSH, MF_BYCOMMAND | check);
                 }
                 break;
@@ -377,8 +379,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_VIEW_BUSHGROUP:
                 {
-                    bViewBushGroup = !bViewBushGroup;
-                    UINT check = bViewBushGroup ? MF_CHECKED : MF_UNCHECKED;
+                    zoneViewFlag ^= ZONE_VIEW_BUSHGROUP;
+                    UINT check = (zoneViewFlag & ZONE_VIEW_BUSHGROUP) ? MF_CHECKED : MF_UNCHECKED;
                     CheckMenuItem(hmenuBar, ID_VIEW_BUSHGROUP, MF_BYCOMMAND | check);
                 }
                 break;
@@ -875,7 +877,8 @@ VOID DrawMain()
     assert(land);
     assert(graphics);
 
-    DrawZones();
+    if(zoneViewFlag)
+        DrawZones();
 
     if (bViewSelectedBushGroup)
         DrawSelectedBushGroup();
@@ -916,7 +919,7 @@ VOID DrawZones()
     {
         const qtb::Zone* zone = dynamic_cast<qtb::Zone*>(*itZone);
 
-        if (bViewQTree)
+        if (zoneViewFlag & ZONE_VIEW_QTREE)
         {
             const qtb::Area& areaTree = zone->area();
             RectF rcTree(viewZoom * (areaTree.left + viewPos.X), viewZoom * (areaTree.bottom + viewPos.Y), viewZoom * areaTree.width(), viewZoom * areaTree.height());
@@ -946,7 +949,7 @@ VOID DrawZones()
 
                 if (bush->isStatic())
                 {
-                    if (bViewStaticAreas)
+                    if (zoneViewFlag & ZONE_VIEW_STATICAREAS)
                     {
                         const qtb::AreaList& areaList = bush->areas();
                         qtb::AreaList::const_iterator itAreaEnd = areaList.end();
@@ -958,7 +961,7 @@ VOID DrawZones()
                         }
                     }
 
-                    if (bViewStaticBush)
+                    if (zoneViewFlag & ZONE_VIEW_STATICBUSH)
                     {
                         Pen pen(staticBushColor);
                         graphics->DrawRectangle(&pen, rcBush);
@@ -966,14 +969,14 @@ VOID DrawZones()
                 }
                 else
                 {
-                    if (bViewDynamicBush)
+                    if (zoneViewFlag & ZONE_VIEW_DYNAMICBUSH)
                     {
                         graphics->FillRectangle(&dynamicBushBrush, rcBush);
                     }
                 }
             }
 
-            if (bViewBushGroup)
+            if (zoneViewFlag & ZONE_VIEW_BUSHGROUP)
             {
                 Pen pen(drawData.GetZoneGenerationRes(zone->generation()).color);
                 graphics->DrawRectangle(&pen, rcGroup);
