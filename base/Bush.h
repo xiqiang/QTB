@@ -38,6 +38,7 @@ namespace qtb
 		BushGroup*			m_group;
 		AreaList			m_areaList;
 		Area				m_overall;
+		bool				m_singleton;
 		bool				m_isStatic;
 
 		QTB_OVERLOAD_BLOCK

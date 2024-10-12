@@ -8,6 +8,7 @@ namespace qtb
 	Bush::Bush(unsigned int id)
 		: m_id(id)
 		, m_group(NULL)
+		, m_singleton(true)
 		, m_isStatic(false)
 	{		
 	}
@@ -17,21 +18,14 @@ namespace qtb
 		if (!m_overall.overlap(other.m_overall))
 			return false;
 
-		size_t size = m_areaList.size();
-		size_t size_r = other.m_areaList.size();
+		if (m_singleton && other.m_singleton)
+			return true;
 
 		AreaList::const_iterator itEnd = m_areaList.end();
 		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
 		{
-			if (size > 1 && size_r > 1 && !it->overlap(other.m_overall))
-				continue;
-
-			AreaList::const_iterator it_rEnd = other.m_areaList.end();
-			for (AreaList::const_iterator it_r = other.m_areaList.begin(); it_r != it_rEnd; ++it_r)
-			{
-				if (it->overlap(*it_r))
-					return true;
-			}
+			if (other.overlap(*it))
+				return true;
 		}
 		return false;
 	}
@@ -40,6 +34,9 @@ namespace qtb
 	{
 		if (!m_overall.overlap(area))
 			return false;
+
+		if (m_singleton)
+			return true;
 
 		AreaList::const_iterator itEnd = m_areaList.end();
 		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
@@ -54,6 +51,9 @@ namespace qtb
 	{
 		if (!m_overall.contains(x, y))
 			return false;
+
+		if (m_singleton)
+			return true;
 
 		AreaList::const_iterator itEnd = m_areaList.end();
 		for (AreaList::const_iterator it = m_areaList.begin(); it != itEnd; ++it)
@@ -92,6 +92,7 @@ namespace qtb
 				m_overall.bottom = area.bottom;
 			if(m_overall.top < area.top)
 				m_overall.top = area.top;
+			m_singleton = false;
 		}
 
 		return true;
@@ -103,6 +104,7 @@ namespace qtb
 		{
 			QTB_RAND_BAD_ALLOC(1);
 			m_areaList.splice(m_areaList.end(), other.m_areaList);
+			m_singleton = false;
 		}
 		catch (std::bad_alloc&)
 		{
