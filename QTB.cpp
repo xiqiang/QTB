@@ -110,6 +110,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 VOID                ResetViewport(HWND hWnd);
 VOID                UpdateViewportRect(HWND hWnd);
+VOID                RefreshMenuCheck(HWND hWnd);
 
 VOID                InitLand();
 VOID                TermLand();
@@ -247,6 +248,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    appTime = GetTickCount64() / 1000.0f;
    initFrameTime = appTime;
+
+   RefreshMenuCheck(hWndMain);
 
    InitLand();
    InitRobot();
@@ -407,11 +410,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     EnableRobotMove(bRobotRandMove);
                 }
                 break;
-            case ID_ROBOT_AUTOBUSH:
+            case ID_ROBOT_RANDOMBUSH:
                 {
                     bRobotAutoBush = !bRobotAutoBush;
                     UINT check = bRobotAutoBush ? MF_CHECKED : MF_UNCHECKED;
-                    CheckMenuItem(hmenuBar, ID_ROBOT_AUTOBUSH, MF_BYCOMMAND | check);
+                    CheckMenuItem(hmenuBar, ID_ROBOT_RANDOMBUSH, MF_BYCOMMAND | check);
 
                     EnableRobotBush(bRobotAutoBush);
                 }
@@ -609,6 +612,48 @@ VOID ResetViewport(HWND hWnd)
     viewZoom = 3.0f;
     viewPos.X = (1 / viewZoom) * (rcViewport.X + rcViewport.Width * 0.5f) - LAND_WIDTH * 0.5f;
     viewPos.Y = (1 / viewZoom) * (rcViewport.Y + rcViewport.Height * 0.5f) - LAND_HEIGHT * 0.5f;
+}
+
+VOID RefreshMenuCheck(HWND hWnd)
+{
+    assert(hWnd != NULL);
+    HMENU hmenuBar = GetMenu(hWnd);
+    UINT check = 0;
+
+    // view
+    check = bViewMask ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_MASK, MF_BYCOMMAND | check);
+
+    check = (zoneViewFlag & ZONE_VIEW_QTREE) ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_QTREE, MF_BYCOMMAND | check);
+
+    check = (zoneViewFlag & ZONE_VIEW_STATICAREAS) ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_STATICAREAS, MF_BYCOMMAND | check);
+
+    check = (zoneViewFlag & ZONE_VIEW_STATICBUSH) ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_STATICBUSH, MF_BYCOMMAND | check);
+
+    check = (zoneViewFlag & ZONE_VIEW_DYNAMICBUSH) ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_DYNAMICBUSH, MF_BYCOMMAND | check);
+
+    check = bViewSelectedBushGroup ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_SELECTEDBUSHGROUP, MF_BYCOMMAND | check);
+
+    check = (zoneViewFlag & ZONE_VIEW_BUSHGROUP) ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_BUSHGROUP, MF_BYCOMMAND | check);
+
+    check = bViewRobot ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_VIEW_ROBOT, MF_BYCOMMAND | check);
+
+    // robot
+    check = bEnableRobot ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_ENABLE_ROBOT, MF_BYCOMMAND | check);
+
+    check = bRobotRandMove ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_ROBOT_RANDMOVE, MF_BYCOMMAND | check);
+
+    check = bRobotAutoBush ? MF_CHECKED : MF_UNCHECKED;
+    CheckMenuItem(hmenuBar, ID_ROBOT_RANDOMBUSH, MF_BYCOMMAND | check);
 }
 
 VOID InitLand()
@@ -1064,28 +1109,24 @@ VOID DrawTexts()
 
     // Initialize arguments.
     Font myFont(L"Arial", 10);
-    SolidBrush blackBrush(Color(255, 0, 0, 0));
-    SolidBrush greyBrush(Color(255, 64, 64, 64));
+    //SolidBrush blackBrush(Color::Black);
+    SolidBrush greyBrush(Color::Gray);
 
     TCHAR string[64] = _T("");
 
     // fps
     PointF origin(10.0f, 10.0f);
-    _sntprintf_s(string, 64, _T("fps: %.2f"), fps);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("fps avg: %.2f"), fpsAvg);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    _sntprintf_s(string, 64, _T("fps: %.2f avg:%.2f"), fps, fpsAvg);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // land
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("land size: %d x %d"), LAND_WIDTH, LAND_HEIGHT);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
     _sntprintf_s(string, 64, _T("min zone size: %d"), MIN_ZONE_SIZE);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     origin = origin + PointF(0.0f, 20.0f);
 #ifdef _WIN64
@@ -1093,27 +1134,12 @@ VOID DrawTexts()
 #else
     _sntprintf_s(string, 64, _T("visible zone: %u"), visibleZone);
 #endif
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // view size
-    origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("view size: %.2f,%.2f"), rcViewport.Width / viewZoom, rcViewport.Height / viewZoom);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // view pos
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // view scale
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("view zoom: %.2f"), viewZoom);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // static area count
     origin = origin + PointF(0.0f, 30.0f);
     _sntprintf_s(string, 64, _T("static area: %d"), land->staticBushes().empty() ? 0 : STATIC_AREA_COUNT);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // static bush count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1122,7 +1148,7 @@ VOID DrawTexts()
 #else
     _sntprintf_s(string, 64, _T("static bush: %u"), land->staticBushes().size());
 #endif
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // dynamic bush count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1131,7 +1157,7 @@ VOID DrawTexts()
 #else
     _sntprintf_s(string, 64, _T("dynamic bush: %u"), land->bushes().size());
 #endif
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // bush group count
     origin = origin + PointF(0.0f, 20.0f);
@@ -1140,43 +1166,31 @@ VOID DrawTexts()
 #else
     _sntprintf_s(string, 64, _T("bush group: %u"), land->bushGroups().size());
 #endif
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // generate static bush
-    origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("rebuild time: %f"), dRebuildTime);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("rebuild time avg: %f"), dRebuildTimeAvg);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // create dynamic bush
+    // robot count
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("create bush time: %f"), dCreateBushTime);
+#ifdef _WIN64
+    _sntprintf_s(string, 64, _T("robot count: %llu"), robotList.size());
+#else
+    _sntprintf_s(string, 64, _T("robot count: %u"), robotList.size());
+#endif
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
-    origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("create bush time avg: %f"), dCreateBushTimeAvg);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // remove dynamic bush
+    // view size
     origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("remove bush time: %f"), dRemoveBushTime);
+    _sntprintf_s(string, 64, _T("view size: %.2f,%.2f"), rcViewport.Width / viewZoom, rcViewport.Height / viewZoom);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
+    // view pos
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("remove bush time avg: %f"), dRemoveBushTimeAvg);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
-
-    // cursor hit
-    origin = origin + PointF(0.0f, 30.0f);
-    _sntprintf_s(string, 64, _T("hit time: %f"), dBushCrossTime);
+    _sntprintf_s(string, 64, _T("view pos: %.2f,%.2f"), viewPos.X, viewPos.Y);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
+    // view scale
     origin = origin + PointF(0.0f, 20.0f);
-    _sntprintf_s(string, 64, _T("hit time avg: %f"), dBushCrossTimeAvg);
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    _sntprintf_s(string, 64, _T("view zoom: %.2f"), viewZoom);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
     // group in mouse
     origin = origin + PointF(0.0f, 30.0f);
@@ -1190,13 +1204,24 @@ VOID DrawTexts()
     SolidBrush bushBrush(drawData.GetBushRes(cursorBushID).color);
     graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &bushBrush);
 
-    // robot count
+    // rebuild static bush
     origin = origin + PointF(0.0f, 30.0f);
-#ifdef _WIN64
-    _sntprintf_s(string, 64, _T("robot count: %llu"), robotList.size());
-#else
-    _sntprintf_s(string, 64, _T("robot count: %u"), robotList.size());
-#endif
-    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &blackBrush);
+    _sntprintf_s(string, 64, _T("rebuild: %f avg:%f"), dRebuildTime, dRebuildTimeAvg);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+
+    // create dynamic bush
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("create bush: %f avg:%f"), dCreateBushTime, dCreateBushTimeAvg);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+
+    // remove dynamic bush
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("remove bush: %f avg:%f"), dRemoveBushTime, dRemoveBushTimeAvg);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
+
+    // cursor hit
+    origin = origin + PointF(0.0f, 20.0f);
+    _sntprintf_s(string, 64, _T("hit: %f avg:%f"), dBushCrossTime, dBushCrossTimeAvg);
+    graphics->DrawString(string, (INT)_tcslen(string), &myFont, origin, &greyBrush);
 
 }
